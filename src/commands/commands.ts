@@ -10,24 +10,11 @@ Office.onReady(() => {
 });
 
 /**
- * Shows a notification when the add-in command is executed.
+ * Completes the generated command hook.
+ * The MVP uses the task pane button only, but Yeoman keeps this file in the manifest.
  * @param event
  */
 function action(event: Office.AddinCommands.Event) {
-  const message: Office.NotificationMessageDetails = {
-    type: Office.MailboxEnums.ItemNotificationMessageType.InformationalMessage,
-    message: "Performed action.",
-    icon: "Icon.80x80",
-    persistent: true,
-  };
-
-  // Show a notification message.
-  Office.context.mailbox.item.notificationMessages.replaceAsync(
-    "ActionPerformanceNotification",
-    message
-  );
-
-  // Be sure to indicate when the add-in command function is complete.
   event.completed();
 }
 
