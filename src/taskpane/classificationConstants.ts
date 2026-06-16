@@ -13,6 +13,7 @@ export interface ClassificationLevel {
 export const CLASSIFICATION_TOOL_NAME = "ClassifyMe";
 export const CLASSIFICATION_BANNER_TAG = "ClassifyMe.ClassificationBanner";
 export const POWERPOINT_FOOTER_SHAPE_NAME = "ClassifyMeFooter";
+export const EXCEL_BANNER_SHAPE_NAME = "ClassifyMeBanner";
 
 export const CLASSIFICATION_PROPERTY_NAMES = {
   level: "ClassificationLevel",

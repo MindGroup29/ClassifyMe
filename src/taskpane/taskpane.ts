@@ -6,6 +6,7 @@
 /* global document, Office */
 
 import { CLASSIFICATION_LEVELS, ClassificationLevel } from "./classificationConstants";
+import { applyExcelClassification } from "./excelClassification";
 import { applyPowerPointClassification } from "./powerPointClassification";
 import { applyWordClassification } from "./wordClassification";
 
@@ -24,7 +25,7 @@ Office.onReady((info) => {
   }
 
   updateSelectedLevel(undefined);
-  showStatus("ClassifyMe supports Word and PowerPoint only in this MVP.", "error");
+  showStatus("ClassifyMe supports Word, PowerPoint and Excel only in this MVP.", "error");
 });
 
 function renderClassificationCards(): void {
@@ -98,7 +99,19 @@ async function applyClassification(level: ClassificationLevel): Promise<void> {
       return;
     }
 
-    showStatus("ClassifyMe supports Word and PowerPoint only in this MVP.", "error");
+    if (activeHost === Office.HostType.Excel) {
+      const result = await applyExcelClassification(level);
+      const metadataMessage = result.metadataSaved
+        ? ""
+        : " Workbook metadata could not be saved in this Excel environment.";
+      showStatus(
+        `Classification ${level.label} applied to ${result.worksheetCount} worksheet(s).${metadataMessage}`,
+        "success"
+      );
+      return;
+    }
+
+    showStatus("ClassifyMe supports Word, PowerPoint and Excel only in this MVP.", "error");
   } catch (error) {
     showStatus(`Unable to apply classification: ${getErrorMessage(error)}`, "error");
   } finally {
@@ -146,9 +159,21 @@ function getErrorMessage(error: unknown): string {
 }
 
 function isSupportedHost(host: Office.HostType | undefined): boolean {
-  return host === Office.HostType.Word || host === Office.HostType.PowerPoint;
+  return (
+    host === Office.HostType.Word ||
+    host === Office.HostType.PowerPoint ||
+    host === Office.HostType.Excel
+  );
 }
 
 function getHostDocumentName(): string {
-  return activeHost === Office.HostType.PowerPoint ? "presentation" : "document";
+  if (activeHost === Office.HostType.PowerPoint) {
+    return "presentation";
+  }
+
+  if (activeHost === Office.HostType.Excel) {
+    return "workbook";
+  }
+
+  return "document";
 }
