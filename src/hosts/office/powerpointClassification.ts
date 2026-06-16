@@ -9,7 +9,7 @@ import {
   ClassificationLevel,
   getClassificationMarkingText,
   POWERPOINT_FOOTER_SHAPE_NAME,
-} from "./classificationConstants";
+} from "../../core/classificationConstants";
 
 const FOOTER_MARGIN = 24;
 const FOOTER_HEIGHT = 22;

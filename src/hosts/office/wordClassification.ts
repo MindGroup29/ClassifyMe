@@ -12,7 +12,7 @@ import {
   ClassificationCode,
   ClassificationLevel,
   getClassificationMarkingText,
-} from "./classificationConstants";
+} from "../../core/classificationConstants";
 
 export async function applyWordClassification(level: ClassificationLevel): Promise<void> {
   await Word.run(async (context) => {

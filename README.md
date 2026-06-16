@@ -15,6 +15,8 @@ Le projet couvre actuellement :
 - une application directe de la classification lors du clic sur une carte ;
 - un affichage du niveau selectionne dans le panneau avec les couleurs du niveau choisi.
 
+Outlook est prepare dans l'organisation du code, mais aucun support Outlook reel n'est implemente dans ce MVP.
+
 ## Cadre technique
 
 Le projet est base sur le template Yeoman officiel pour les Office Add-ins :
@@ -28,6 +30,34 @@ Le projet est base sur le template Yeoman officiel pour les Office Add-ins :
 - aucune base de donnees ;
 - aucune API Graph ;
 - aucune authentification.
+
+## Organisation du code
+
+Le code est separe pour garder un produit unique `ClassifyMe` tout en distinguant les usages Office et Outlook :
+
+```text
+src/
+  core/
+    classificationConstants.ts
+  hosts/
+    office/
+      wordClassification.ts
+      excelClassification.ts
+      powerpointClassification.ts
+      officeRouter.ts
+    outlook/
+      outlookClassification.ts
+  ui/
+    taskpane/
+      taskpane.ts
+      taskpane.html
+      taskpane.css
+```
+
+- `core/` contient les niveaux, textes, couleurs, noms de shapes et noms de metadonnees communs.
+- `hosts/office/` contient les implementations Word, Excel et PowerPoint, plus le routeur qui choisit la bonne implementation selon l'hote actif.
+- `hosts/outlook/` contient uniquement un placeholder pour une future implementation Outlook.
+- `ui/taskpane/` contient l'interface du panneau lateral et ne porte pas la logique specifique Word, Excel ou PowerPoint.
 
 ## Installation
 
@@ -134,6 +164,9 @@ Selon le poste, Office ou le navigateur peut demander d'approuver un certificat 
 ## Ce qui fonctionne
 
 - Le panneau lateral `ClassifyMe` est disponible dans Word, PowerPoint et Excel via le manifeste Office.
+- Le code commun est isole dans `src/core`.
+- Les implementations Word, PowerPoint et Excel sont isolees dans `src/hosts/office`.
+- Un placeholder Outlook existe dans `src/hosts/outlook`, sans support Outlook reel.
 - Les quatre niveaux de classification sont affiches avec un libelle, un code et une courte description.
 - Le niveau choisi est memorise dans l'etat local du panneau.
 - L'encart du niveau selectionne reprend le fond et la couleur de texte du niveau choisi.
@@ -162,7 +195,7 @@ Selon le poste, Office ou le navigateur peut demander d'approuver un certificat 
 - L'utilisateur doit recliquer sur un niveau de classification pour mettre a jour le classeur apres creation de nouvelles feuilles.
 - Les metadonnees Excel peuvent ne pas etre enregistrees si l'environnement Office ne supporte pas les proprietes personnalisees du classeur.
 - Le panneau ne relit pas encore automatiquement une classification deja presente lors de l'ouverture d'un fichier.
-- Outlook n'est pas implemente.
+- Outlook n'est pas implemente et n'est pas declare dans le manifeste.
 - Le fichier n'est pas chiffre.
 - L'add-in ne bloque pas l'enregistrement, le partage, la copie, l'impression ou le transfert.
 - Aucun controle DLP n'est applique.

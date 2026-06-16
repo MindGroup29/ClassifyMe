@@ -1,14 +1,16 @@
 /*
  * ClassifyMe MVP task pane.
- * Host-specific Office.js behavior is delegated to Word and PowerPoint modules.
+ * Host-specific Office.js behavior is delegated to the ClassifyMe Office router.
  */
 
 /* global document, Office */
 
-import { CLASSIFICATION_LEVELS, ClassificationLevel } from "./classificationConstants";
-import { applyExcelClassification } from "./excelClassification";
-import { applyPowerPointClassification } from "./powerPointClassification";
-import { applyWordClassification } from "./wordClassification";
+import { CLASSIFICATION_LEVELS, ClassificationLevel } from "../../core/classificationConstants";
+import {
+  applyOfficeClassification,
+  getOfficeHostDocumentName,
+  isSupportedOfficeHost,
+} from "../../hosts/office/officeRouter";
 
 let activeHost: Office.HostType | undefined;
 
@@ -17,10 +19,13 @@ Office.onReady((info) => {
   document.getElementById("sideload-msg").style.display = "none";
   document.getElementById("app-body").style.display = "flex";
 
-  if (isSupportedHost(activeHost)) {
+  if (isSupportedOfficeHost(activeHost)) {
     renderClassificationCards();
     updateSelectedLevel(undefined);
-    showStatus(`Choose a level to apply it to the ${getHostDocumentName()}.`, "info");
+    showStatus(
+      `Choose a level to apply it to the ${getOfficeHostDocumentName(activeHost)}.`,
+      "info"
+    );
     return;
   }
 
@@ -84,34 +89,8 @@ async function applyClassification(level: ClassificationLevel): Promise<void> {
   showStatus(`Applying ${level.label} classification...`, "info");
 
   try {
-    if (activeHost === Office.HostType.Word) {
-      await applyWordClassification(level);
-
-      // const publicMessage =
-      //   level.code === "PUBLIC" ? " Public documents do not receive a banner by default." : "";
-      showStatus(`Classification ${level.label} applied.`, "success");
-      return;
-    }
-
-    if (activeHost === Office.HostType.PowerPoint) {
-      const slideCount = await applyPowerPointClassification(level);
-      showStatus(`Classification ${level.label} applied to ${slideCount} slide(s).`, "success");
-      return;
-    }
-
-    if (activeHost === Office.HostType.Excel) {
-      const result = await applyExcelClassification(level);
-      const metadataMessage = result.metadataSaved
-        ? ""
-        : " Workbook metadata could not be saved in this Excel environment.";
-      showStatus(
-        `Classification ${level.label} applied to ${result.worksheetCount} worksheet(s).${metadataMessage}`,
-        "success"
-      );
-      return;
-    }
-
-    showStatus("ClassifyMe supports Word, PowerPoint and Excel only in this MVP.", "error");
+    const message = await applyOfficeClassification(activeHost, level);
+    showStatus(message, isSupportedOfficeHost(activeHost) ? "success" : "error");
   } catch (error) {
     showStatus(`Unable to apply classification: ${getErrorMessage(error)}`, "error");
   } finally {
@@ -156,24 +135,4 @@ function getErrorMessage(error: unknown): string {
   }
 
   return String(error);
-}
-
-function isSupportedHost(host: Office.HostType | undefined): boolean {
-  return (
-    host === Office.HostType.Word ||
-    host === Office.HostType.PowerPoint ||
-    host === Office.HostType.Excel
-  );
-}
-
-function getHostDocumentName(): string {
-  if (activeHost === Office.HostType.PowerPoint) {
-    return "presentation";
-  }
-
-  if (activeHost === Office.HostType.Excel) {
-    return "workbook";
-  }
-
-  return "document";
 }

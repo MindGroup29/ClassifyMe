@@ -11,7 +11,7 @@ import {
   ClassificationLevel,
   EXCEL_BANNER_SHAPE_NAME,
   getClassificationMarkingText,
-} from "./classificationConstants";
+} from "../../core/classificationConstants";
 
 const BANNER_LEFT = 12;
 const BANNER_TOP = 12;
