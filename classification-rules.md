@@ -14,7 +14,7 @@ Le MVP ne vise pas à chiffrer, bloquer, auditer ou remplacer Microsoft Purview.
 
 | Code technique | Libellé utilisateur | Usage attendu | Marquage visuel |
 |---|---|---|---|
-| PUBLIC | Public | Information destinée à être diffusée publiquement. | Aucun marquage ou bandeau discret. |
+| PUBLIC | Public | Information destinée à être diffusée publiquement. | ~~Aucun marquage ou~~ bandeau discret. |
 | RESTREINT | Restreint | Information réservée aux collaborateurs de l'entreprise. | Bandeau discret. |
 | CONFIDENTIEL | Confidentiel | Information dont la diffusion non maîtrisée peut nuire à l'entreprise. | Bandeau visible. |
 | SECRET | Secret | Information critique : RH, finance, juridique, stratégie, données clients sensibles, plans, savoir-faire. | Bandeau très visible. |
@@ -125,7 +125,7 @@ Ces codes pourront servir ultérieurement à migrer vers des étiquettes Microso
 À compléter par l'entreprise :
 
 - [ ] Le marquage est-il recommandé ou obligatoire ?
-- [ ] Le niveau `PUBLIC` doit-il afficher un bandeau ?
+- [x] Le niveau `PUBLIC` doit-il afficher un bandeau ? OUI
 - [ ] Le préfixe objet email est-il autorisé ?
 - [ ] Faut-il afficher une alerte si aucun niveau n'est choisi ?
 - [ ] Le bandeau doit-il être inséré en haut ou en bas des documents ?

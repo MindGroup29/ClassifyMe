@@ -12,6 +12,7 @@ export interface ClassificationLevel {
 
 export const CLASSIFICATION_TOOL_NAME = "ClassifyMe";
 export const CLASSIFICATION_BANNER_TAG = "ClassifyMe.ClassificationBanner";
+export const POWERPOINT_FOOTER_SHAPE_NAME = "ClassifyMeFooter";
 
 export const CLASSIFICATION_PROPERTY_NAMES = {
   level: "ClassificationLevel",
@@ -60,3 +61,11 @@ export const CLASSIFICATION_LEVELS: ClassificationLevel[] = [
     bannerBackground: "#581c87",
   },
 ];
+
+export function getClassificationMarkingText(level: ClassificationLevel): string {
+  if (!level.bannerTitle || !level.bannerText) {
+    return `Classification: ${level.code}`;
+  }
+
+  return `${level.bannerTitle} - ${level.bannerText}`;
+}
