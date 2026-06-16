@@ -14,8 +14,6 @@ import {
   ClassificationLevel,
 } from "./classificationConstants";
 
-let selectedLevel: ClassificationLevel | undefined;
-
 Office.onReady((info) => {
   if (info.host === Office.HostType.Word) {
     document.getElementById("sideload-msg").style.display = "none";
@@ -23,8 +21,6 @@ Office.onReady((info) => {
 
     renderClassificationCards();
     updateSelectedLevel(undefined);
-
-    document.getElementById("apply-classification").onclick = applySelectedClassification;
   }
 });
 
@@ -42,22 +38,18 @@ function renderClassificationCards(): void {
       <span class="classification-card__code">${level.code}</span>
       <span class="classification-card__description">${level.description}</span>
     `;
-    card.onclick = () => updateSelectedLevel(level);
+    card.onclick = () => applyClassification(level);
 
     levelsContainer.appendChild(card);
   });
 }
 
 function updateSelectedLevel(level: ClassificationLevel | undefined): void {
-  selectedLevel = level;
-
   const selectedLabel = document.getElementById("selected-level");
-  const applyButton = document.getElementById("apply-classification") as any;
 
   selectedLabel.textContent = level
     ? `${level.label} (${level.code})`
     : "No classification selected";
-  applyButton.disabled = !level;
 
   document.querySelectorAll(".classification-card").forEach((card) => {
     card.classList.toggle(
@@ -67,27 +59,22 @@ function updateSelectedLevel(level: ClassificationLevel | undefined): void {
   });
 }
 
-async function applySelectedClassification(): Promise<void> {
-  if (!selectedLevel) {
-    showStatus("Choose a classification level first.", "error");
-    return;
-  }
+async function applyClassification(level: ClassificationLevel): Promise<void> {
+  updateSelectedLevel(level);
 
   setBusyState(true);
-  showStatus("Applying classification...", "info");
+  showStatus(`Applying ${level.label} classification...`, "info");
 
   try {
     await Word.run(async (context) => {
-      await applyDocumentBanner(context, selectedLevel);
-      await updateDocumentMetadata(context, selectedLevel);
+      await applyDocumentBanner(context, level);
+      await updateDocumentMetadata(context, level);
       await context.sync();
     });
 
     const publicMessage =
-      selectedLevel.code === "PUBLIC"
-        ? " Public documents do not receive a banner by default."
-        : "";
-    showStatus(`Classification ${selectedLevel.label} applied.${publicMessage}`, "success");
+      level.code === "PUBLIC" ? " Public documents do not receive a banner by default." : "";
+    showStatus(`Classification ${level.label} applied.${publicMessage}`, "success");
   } catch (error) {
     showStatus(`Unable to apply classification: ${getErrorMessage(error)}`, "error");
   } finally {
@@ -210,10 +197,10 @@ async function setCustomProperty(
 }
 
 function setBusyState(isBusy: boolean): void {
-  const applyButton = document.getElementById("apply-classification") as any;
-
-  applyButton.disabled = isBusy || !selectedLevel;
-  applyButton.textContent = isBusy ? "Applying..." : "Apply classification";
+  document.querySelectorAll(".classification-card").forEach((card) => {
+    (card as any).disabled = isBusy;
+    card.setAttribute("aria-disabled", String(isBusy));
+  });
 }
 
 function showStatus(message: string, type: "info" | "success" | "error"): void {
