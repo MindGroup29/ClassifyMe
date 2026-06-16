@@ -1,4 +1,4 @@
-# ConfidentialiteOfficeAddin
+# ClassifyMe
 
 Add-in Office MVP permettant aux utilisateurs de marquer manuellement leurs documents et emails selon un niveau de confidentialité.
 
