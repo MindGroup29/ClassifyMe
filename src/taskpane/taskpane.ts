@@ -46,10 +46,24 @@ function renderClassificationCards(): void {
 
 function updateSelectedLevel(level: ClassificationLevel | undefined): void {
   const selectedLabel = document.getElementById("selected-level");
+  const selectedSummary = document.querySelector(".selection-summary") as any;
+  const selectedSummaryLabel = document.querySelector(".selection-summary__label") as any;
 
   selectedLabel.textContent = level
     ? `${level.label} (${level.code})`
     : "No classification selected";
+
+  if (level) {
+    selectedSummary.style.backgroundColor = level.bannerBackground;
+    selectedSummary.style.borderColor = level.bannerBackground;
+    selectedSummary.style.color = level.bannerColor;
+    selectedLabel.style.color = level.bannerColor;
+    selectedSummaryLabel.style.color = level.bannerColor;
+  } else {
+    selectedSummary.removeAttribute("style");
+    selectedLabel.removeAttribute("style");
+    selectedSummaryLabel.removeAttribute("style");
+  }
 
   document.querySelectorAll(".classification-card").forEach((card) => {
     card.classList.toggle(

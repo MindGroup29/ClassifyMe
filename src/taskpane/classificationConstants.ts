@@ -28,7 +28,7 @@ export const CLASSIFICATION_LEVELS: ClassificationLevel[] = [
     bannerTitle: "",
     bannerText: "",
     bannerColor: "#1f2933",
-    bannerBackground: "#eef2f6",
+    bannerBackground: "#baf1cf",
   },
   {
     code: "RESTREINT",
