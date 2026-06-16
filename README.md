@@ -1,236 +1,135 @@
 # ClassifyMe
 
-Add-in Office MVP permettant aux utilisateurs de marquer manuellement leurs documents et emails selon un niveau de confidentialité.
+ClassifyMe est un MVP d'Office Add-in pour Microsoft Word. Il permet a un utilisateur de choisir manuellement un niveau de classification documentaire, d'ajouter un bandeau visible dans le document et de stocker des proprietes personnalisees simples.
 
-## Objectif
+Le MVP ne chiffre pas les documents, ne bloque pas l'enregistrement, n'analyse pas le contenu et ne remplace pas Microsoft Purview.
 
-Ce projet vise à fournir une alternative simple et peu coûteuse aux étiquettes de sensibilité Microsoft Purview pour une entreprise utilisant Microsoft 365 Business Standard.
+## Objectif actuel
 
-L'add-in ne chiffre pas les documents, ne bloque pas les partages et ne remplace pas Microsoft Purview.
+Le premier tour du projet couvre uniquement Word avec un Task Pane Add-in Office.js en TypeScript.
 
-Il permet uniquement de :
+L'add-in permet de :
 
-- choisir un niveau de classification ;
-- ajouter un marquage visuel ;
-- stocker une métadonnée simple ;
-- responsabiliser l'utilisateur.
+- afficher un panneau lateral `ClassifyMe` dans Word ;
+- choisir un niveau parmi `PUBLIC`, `RESTREINT`, `CONFIDENTIEL` et `SECRET` ;
+- afficher le niveau selectionne dans le panneau ;
+- appliquer la classification au document ;
+- creer ou mettre a jour un bandeau unique en haut du document pour `RESTREINT`, `CONFIDENTIEL` et `SECRET` avec un tableau Word pleine largeur a une cellule ;
+- retirer le bandeau ClassifyMe lorsque le niveau `PUBLIC` est applique, car `classification-rules.md` indique qu'aucun bandeau n'est affiche par defaut pour ce niveau ;
+- stocker les proprietes personnalisees `ClassificationLevel`, `ClassificationLabel`, `ClassificationUpdatedAt` et `ClassificationTool`.
 
-## Niveaux de classification
+## Cadre technique
 
-Les niveaux cibles sont définis dans `classification-rules.md`.
+Le projet est base sur le template Yeoman officiel pour les Office Add-ins :
 
-Codes techniques :
-
-- `PUBLIC`
-- `RESTREINT`
-- `CONFIDENTIEL`
-- `SECRET`
-
-## Cadre technologique
-
-Le projet doit être développé comme un Office Add-in basé sur :
-
+- Office Add-in Task Pane ;
 - Office.js ;
 - TypeScript ;
-- Node.js ;
-- npm ;
-- Yeoman Generator for Office Add-ins ;
-- Visual Studio Code.
+- cible Word ;
+- execution locale via Node.js et npm ;
+- aucun backend ;
+- aucune base de donnees ;
+- aucune API Graph ;
+- aucune authentification.
 
-Le générateur Yeoman officiel Microsoft permet de créer des projets Office Add-ins basés sur Node.js. Microsoft recommande Visual Studio si l'on veut du code serveur .NET ou un hébergement IIS, ce qui n'est pas le cas ici.
+## Installation
 
-Documentation Microsoft utile :
-
-- Yeoman Generator for Office Add-ins  
-  https://learn.microsoft.com/en-us/office/dev/add-ins/develop/yeoman-generator-overview
-
-- Développement des Office Add-ins  
-  https://learn.microsoft.com/en-us/office/dev/add-ins/develop/develop-overview
-
-- Déploiement centralisé des Office Add-ins  
-  https://learn.microsoft.com/en-us/microsoft-365/admin/manage/manage-deployment-of-add-ins
-
-## Pré-requis Windows
-
-Installer les outils suivants :
-
-### 1. Visual Studio Code
-
-Télécharger et installer :
-
-https://code.visualstudio.com/
-
-Extensions recommandées :
-
-- ESLint
-- Prettier
-- Microsoft 365 Agents Toolkit, optionnel
-
-### 2. Node.js LTS
-
-Télécharger et installer la version LTS :
-
-https://nodejs.org/
-
-Vérifier l'installation :
-
-```powershell
-node --version
-npm --version
-````
-
-### 3. Git
-
-Télécharger et installer :
-
-[https://git-scm.com/](https://git-scm.com/)
-
-Vérifier l'installation :
-
-```powershell
-git --version
-```
-
-### 4. Yeoman et générateur Office
-
-Installer Yeoman et le générateur Office :
-
-```powershell
-npm install -g yo generator-office
-```
-
-Vérifier :
-
-```powershell
-yo --version
-```
-
-## Création initiale du projet
-
-Depuis le dossier parent du projet :
-
-```powershell
-yo office
-```
-
-Choix recommandés pour le premier MVP :
-
-```text
-Project type: Office Add-in Task Pane project
-Script type: TypeScript
-Office client application: Word
-Project name: ClassifyMe
-```
-
-Pourquoi commencer par Word :
-
-* API plus simple qu'Outlook ;
-* validation rapide du geste utilisateur ;
-* bon support pour les documents bureautiques ;
-* extension plus facile ensuite vers Excel et PowerPoint.
-
-## Installation des dépendances
-
-Dans le dossier du projet :
+Installer les dependances depuis le dossier du projet :
 
 ```powershell
 npm install
 ```
 
-## Lancement en développement
+## Commandes utiles
 
-Pour lancer l'add-in en local :
+Compiler en mode developpement :
+
+```powershell
+npm run build:dev
+```
+
+Valider le manifeste Office :
+
+```powershell
+npm run validate
+```
+
+Lancer l'add-in localement dans Word :
 
 ```powershell
 npm start
 ```
 
-Le modèle Yeoman configure généralement un serveur local HTTPS et ouvre l'application Office cible.
-
-Selon la configuration du poste, il peut être nécessaire d'accepter un certificat de développement local.
-
-## Arrêt du serveur local
+Arreter le serveur local et le debug Office :
 
 ```powershell
 npm stop
 ```
 
-ou fermer le terminal actif avec `Ctrl + C`.
+Selon le poste, Office ou le navigateur peut demander d'approuver un certificat de developpement local HTTPS.
 
-## Structure documentaire du dépôt
-
-Le dépôt doit contenir au minimum :
-
-```text
-classification-rules.md
-AGENTS.md
-README.md
-```
-
-Après génération Yeoman, le projet contiendra également les fichiers techniques de l'add-in.
-
-## Règles de développement
-
-Avant toute modification :
-
-1. lire `classification-rules.md` ;
-2. respecter le périmètre MVP ;
-3. éviter toute fonctionnalité avancée non demandée ;
-4. mettre à jour ce README.
-
-## État actuel
-
-À compléter après génération du projet.
-
-Exemple :
-
-```text
-- Projet Yeoman généré : non
-- Add-in Word fonctionnel : non
-- Bandeau de classification : non
-- Propriété documentaire personnalisée : non
-- Outlook : non démarré
-```
-
-## Vérification manuelle attendue
-
-Lorsque le premier prototype Word sera développé :
+## Verification manuelle dans Word
 
 ```text
 1. Lancer npm start.
-2. Ouvrir Word.
-3. Afficher le panneau de l'add-in.
-4. Choisir un niveau de classification.
-5. Cliquer sur Appliquer.
-6. Vérifier que le bandeau apparaît dans le document.
-7. Vérifier que le niveau affiché dans l'add-in correspond au choix utilisateur.
-8. Enregistrer puis rouvrir le document.
-9. Vérifier que la classification reste disponible.
+2. Ouvrir Word si le script ne l'ouvre pas automatiquement.
+3. Ouvrir le panneau ClassifyMe depuis le ruban.
+4. Selectionner Confidentiel.
+5. Verifier que le panneau affiche Confidentiel (CONFIDENTIEL).
+6. Cliquer sur Apply classification.
+7. Verifier qu'un bandeau de classification apparait en haut du document.
+8. Verifier que le fond du bandeau reste visible sans passer la souris dessus.
+9. Selectionner Secret, puis cliquer a nouveau sur Apply classification.
+10. Verifier que le bandeau existant est mis a jour sans creer de doublon visible.
+11. Selectionner Public, puis cliquer sur Apply classification.
+12. Verifier que le bandeau ClassifyMe est retire.
 ```
 
-## Hors périmètre
+## Ce qui fonctionne
 
-Le MVP ne doit pas inclure :
+- Le panneau lateral `ClassifyMe` est disponible dans Word.
+- Les quatre niveaux de classification sont affiches avec un libelle, un code et une courte description.
+- Le niveau choisi est memorise dans l'etat local du panneau.
+- Le bouton `Apply classification` applique le niveau selectionne.
+- Un bandeau unique est insere ou mis a jour en haut du document pour les niveaux non publics.
+- Le fond du bandeau est applique a une cellule de tableau Word pour rester visible sans survol de la souris.
+- Les anciens bandeaux ClassifyMe en doublon sont supprimes lors d'une reapplication.
+- Les proprietes personnalisees du document sont mises a jour si l'API Word les accepte dans l'environnement Office utilise.
 
-* chiffrement ;
-* DLP ;
-* restriction d'impression ;
-* restriction de transfert ;
-* IA ;
-* reporting centralisé ;
-* base de données ;
-* API Graph ;
-* authentification Entra ID ;
-* intégration Microsoft Purview.
+## Limites connues du MVP
 
-## Déploiement cible
+- Le MVP cible Word uniquement.
+- Excel, PowerPoint et Outlook ne sont pas implementes.
+- Le document n'est pas chiffre.
+- L'add-in ne bloque pas l'enregistrement, le partage, la copie, l'impression ou le transfert.
+- Aucun controle DLP n'est applique.
+- Le contenu du document n'est pas analyse.
+- Aucune IA n'est utilisee.
+- Aucun reporting centralise n'est disponible.
+- Aucune synchronisation avec Microsoft Purview n'est implementee.
+- Le panneau ne relit pas encore automatiquement une classification deja presente lors de l'ouverture d'un document.
 
-Le déploiement final pourra être réalisé via le centre d'administration Microsoft 365, dans :
+## Prochaines etapes recommandees
 
-```text
-Settings > Integrated apps
-```
+1. Verifier manuellement le comportement dans Word pour les quatre niveaux.
+2. Confirmer avec l'entreprise si le niveau `PUBLIC` doit rester sans bandeau.
+3. Ajouter la lecture des proprietes existantes a l'ouverture du panneau.
+4. Ajuster le style exact du bandeau selon la charte interne.
+5. Etendre ensuite seulement vers Excel, puis PowerPoint, en conservant les memes constantes de classification.
 
-Le déploiement centralisé permet d'attribuer un add-in à des utilisateurs ou groupes Microsoft 365.
+## Hors perimetre
 
-Cette étape n'est pas nécessaire pour le développement local.
+Les fonctionnalites suivantes restent explicitement exclues du MVP :
+
+- chiffrement ;
+- DLP ;
+- restriction d'impression ;
+- restriction de transfert ;
+- analyse automatique du contenu ;
+- suggestion par IA ;
+- reporting centralise ;
+- workflow de validation ;
+- base de donnees ;
+- API Graph ;
+- authentification Entra ID ;
+- integration Microsoft Purview.
