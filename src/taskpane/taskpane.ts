@@ -101,19 +101,39 @@ async function applyDocumentBanner(
   level: ClassificationLevel
 ): Promise<void> {
   const body = context.document.body;
-  const existingBanners = body.contentControls.getByTag(CLASSIFICATION_BANNER_TAG);
+  const sections = context.document.sections;
+  const existingBodyBanners = body.contentControls.getByTag(CLASSIFICATION_BANNER_TAG);
 
-  existingBanners.load("items");
+  existingBodyBanners.load("items");
+  sections.load("items");
   await context.sync();
+
+  const headerBannerCollections = sections.items.map((section) => {
+    const header = section.getHeader(Word.HeaderFooterType.primary);
+    const existingHeaderBanners = header.contentControls.getByTag(CLASSIFICATION_BANNER_TAG);
+
+    existingHeaderBanners.load("items");
+    return { header, existingHeaderBanners };
+  });
+
+  await context.sync();
+
+  // Remove older ClassifyMe banners from the document body and from Word headers before recreating them.
+  existingBodyBanners.items.forEach((banner) => banner.delete(false));
+  headerBannerCollections.forEach(({ existingHeaderBanners }) => {
+    existingHeaderBanners.items.forEach((banner) => banner.delete(false));
+  });
 
   // PUBLIC has no visible banner in classification-rules.md, so an existing ClassifyMe banner is removed.
   if (level.code === "PUBLIC") {
-    existingBanners.items.forEach((banner) => banner.delete(false));
     return;
   }
 
-  existingBanners.items.forEach((banner) => banner.delete(false));
-  createClassificationBannerTable(body, level);
+  // Word stores headers per section. Applying the banner to each primary header keeps
+  // the classification visible throughout documents that contain section breaks.
+  headerBannerCollections.forEach(({ header }) => {
+    createClassificationBannerTable(header, level);
+  });
 }
 
 function createClassificationBannerTable(

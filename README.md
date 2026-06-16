@@ -15,7 +15,7 @@ L'add-in permet de :
 - afficher le niveau selectionne dans le panneau ;
 - afficher l'encart du niveau selectionne avec les memes couleurs que la classification choisie ;
 - appliquer directement la classification au document lors du clic sur un niveau ;
-- creer ou mettre a jour un bandeau unique en haut du document pour `RESTREINT`, `CONFIDENTIEL` et `SECRET` avec un tableau Word pleine largeur a une cellule ;
+- creer ou mettre a jour un bandeau dans l'en-tete Word du document pour `RESTREINT`, `CONFIDENTIEL` et `SECRET` avec un tableau Word pleine largeur a une cellule ;
 - retirer le bandeau ClassifyMe lorsque le niveau `PUBLIC` est applique, car `classification-rules.md` indique qu'aucun bandeau n'est affiche par defaut pour ce niveau ;
 - stocker les proprietes personnalisees `ClassificationLevel`, `ClassificationLabel`, `ClassificationUpdatedAt` et `ClassificationTool`.
 
@@ -78,7 +78,7 @@ Selon le poste, Office ou le navigateur peut demander d'approuver un certificat 
 4. Cliquer sur Confidentiel.
 5. Verifier que le panneau affiche Confidentiel (CONFIDENTIEL).
 6. Verifier que l'encart du niveau selectionne reprend les couleurs de la classification.
-7. Verifier qu'un bandeau de classification apparait en haut du document.
+7. Verifier qu'un bandeau de classification apparait dans l'en-tete Word du document.
 8. Verifier que le fond du bandeau reste visible sans passer la souris dessus.
 9. Cliquer sur Secret.
 10. Verifier que le bandeau existant est mis a jour sans creer de doublon visible.
@@ -93,7 +93,7 @@ Selon le poste, Office ou le navigateur peut demander d'approuver un certificat 
 - Le niveau choisi est memorise dans l'etat local du panneau.
 - L'encart du niveau selectionne reprend le fond et la couleur de texte du niveau choisi.
 - Un clic sur une carte de classification applique directement le niveau selectionne.
-- Un bandeau unique est insere ou mis a jour en haut du document pour les niveaux non publics.
+- Un bandeau est insere ou mis a jour dans l'en-tete Word du document pour les niveaux non publics.
 - Le fond du bandeau est applique a une cellule de tableau Word pour rester visible sans survol de la souris.
 - Les anciens bandeaux ClassifyMe en doublon sont supprimes lors d'une reapplication.
 - Les proprietes personnalisees du document sont mises a jour si l'API Word les accepte dans l'environnement Office utilise.
