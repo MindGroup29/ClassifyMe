@@ -1,4 +1,4 @@
-# Règles de classification — Add-in Confidentialité
+# Règles de classification — ClassifyMe
 
 ## Objectif
 
@@ -15,9 +15,9 @@ Le MVP ne vise pas à chiffrer, bloquer, auditer ou remplacer Microsoft Purview.
 | Code technique | Libellé utilisateur | Usage attendu | Marquage visuel |
 |---|---|---|---|
 | PUBLIC | Public | Information destinée à être diffusée publiquement. | Aucun marquage ou bandeau discret. |
-| INTERNE | Interne | Information réservée aux collaborateurs de l'entreprise. | Bandeau discret. |
+| RESTREINT | Restreint | Information réservée aux collaborateurs de l'entreprise. | Bandeau discret. |
 | CONFIDENTIEL | Confidentiel | Information dont la diffusion non maîtrisée peut nuire à l'entreprise. | Bandeau visible. |
-| SENSIBLE | Sensible | Information critique : RH, finance, juridique, stratégie, données clients sensibles, plans, savoir-faire. | Bandeau très visible. |
+| SECRET | Secret | Information critique : RH, finance, juridique, stratégie, données clients sensibles, plans, savoir-faire. | Bandeau très visible. |
 
 ## Comportement général
 
@@ -48,7 +48,7 @@ Pour les documents Office, l'add-in doit :
 | ClassificationLevel | CONFIDENTIEL |
 | ClassificationLabel | Confidentiel |
 | ClassificationUpdatedAt | 2026-06-16T10:30:00Z |
-| ClassificationTool | ConfidentialiteOfficeAddin |
+| ClassificationTool | ClassifyMe |
 
 ## Outlook
 
@@ -58,7 +58,7 @@ Pour les emails, l'add-in doit :
 2. insérer un bandeau dans le corps du message ;
 3. stocker le niveau dans une propriété personnalisée Outlook si possible ;
 4. ne pas ajouter automatiquement de préfixe dans l'objet par défaut ;
-5. proposer éventuellement une option manuelle pour ajouter `[CONFIDENTIEL]` ou `[SENSIBLE]`.
+5. proposer éventuellement une option manuelle pour ajouter `[CONFIDENTIEL]` ou `[SECRET]`.
 
 ## Bandeaux proposés
 
@@ -66,20 +66,20 @@ Pour les emails, l'add-in doit :
 
 Aucun bandeau par défaut.
 
-### INTERNE
+### RESTREINT
 
-> Classification : INTERNE  
-> Ce document est destiné à un usage interne à l'entreprise.
+> Classification : RESTREINT  
+> Ce document est destiné à un usage restreint à l'entreprise.
 
 ### CONFIDENTIEL
 
 > Classification : CONFIDENTIEL  
 > Ce document contient des informations confidentielles. Sa diffusion doit être limitée aux personnes autorisées.
 
-### SENSIBLE
+### SECRET
 
-> Classification : SENSIBLE  
-> Ce document contient des informations sensibles. Sa diffusion, sa copie et son transfert doivent être strictement maîtrisés.
+> Classification : SECRET  
+> Ce document contient des informations secrètes. Sa diffusion, sa copie et son transfert doivent être strictement maîtrisés.
 
 ## Règles UX
 
@@ -114,9 +114,9 @@ Les fonctionnalités suivantes sont explicitement exclues :
 Les codes techniques doivent rester stables :
 
 - PUBLIC
-- INTERNE
+- RESTREINT
 - CONFIDENTIEL
-- SENSIBLE
+- SECRET
 
 Ces codes pourront servir ultérieurement à migrer vers des étiquettes Microsoft Purview ou une autre solution de classification.
 

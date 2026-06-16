@@ -119,7 +119,7 @@ Choix recommandés pour le premier MVP :
 Project type: Office Add-in Task Pane project
 Script type: TypeScript
 Office client application: Word
-Project name: ConfidentialiteOfficeAddin
+Project name: ClassifyMe
 ```
 
 Pourquoi commencer par Word :
