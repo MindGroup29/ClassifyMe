@@ -3,9 +3,19 @@
 const devCerts = require("office-addin-dev-certs");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
+const path = require("path");
 
 const urlDev = "https://localhost:3000/";
-const urlProd = "https://www.contoso.com/"; // CHANGE THIS TO YOUR PRODUCTION DEPLOYMENT LOCATION
+const defaultProductionBaseUrl = "https://your-org.github.io/your-repo/";
+const defaultProductionOrigin = "https://your-org.github.io";
+
+function normalizeBaseUrl(value) {
+  return value.endsWith("/") ? value : `${value}/`;
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
 
 async function getHttpsOptions() {
   const httpsOptions = await devCerts.getHttpsServerOptions();
@@ -13,7 +23,13 @@ async function getHttpsOptions() {
 }
 
 module.exports = async (env, options) => {
+  env = env || {};
   const dev = options.mode === "development";
+  const productionBaseUrl = normalizeBaseUrl(
+    env.productionUrl || process.env.CLASSIFYME_PRODUCTION_BASE_URL || defaultProductionBaseUrl
+  );
+  const productionOrigin = new URL(productionBaseUrl).origin;
+  const outputDirectory = env.githubPages ? "docs" : "dist";
   const config = {
     devtool: "source-map",
     entry: {
@@ -22,6 +38,7 @@ module.exports = async (env, options) => {
       commands: "./src/commands/commands.ts",
     },
     output: {
+      path: path.resolve(__dirname, outputDirectory),
       clean: true,
     },
     resolve: {
@@ -68,9 +85,13 @@ module.exports = async (env, options) => {
             transform(content) {
               if (dev) {
                 return content;
-              } else {
-                return content.toString().replace(new RegExp(urlDev, "g"), urlProd);
               }
+
+              return content
+                .toString()
+                .replace(new RegExp(escapeRegExp(urlDev), "g"), productionBaseUrl)
+                .replace(new RegExp(escapeRegExp(defaultProductionBaseUrl), "g"), productionBaseUrl)
+                .replace(new RegExp(escapeRegExp(defaultProductionOrigin), "g"), productionOrigin);
             },
           },
         ],

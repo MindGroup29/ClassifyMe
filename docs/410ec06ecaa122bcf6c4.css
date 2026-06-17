@@ -1,0 +1,181 @@
+html,
+body {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+  background: #f7f8fa;
+  color: #1f2933;
+}
+
+button,
+body {
+  font-family: "Segoe UI", Arial, sans-serif;
+}
+
+.sideload-message {
+  padding: 24px;
+}
+
+.app-shell {
+  box-sizing: border-box;
+  min-height: 100vh;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px 18px;
+}
+
+.app-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.app-kicker {
+  margin: 0;
+  color: #5c6f82;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.app-header h1 {
+  margin: 0;
+  color: #111827;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.app-subtitle {
+  margin: 0;
+  color: #52616f;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.selection-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid #d7dde5;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.selection-summary__label {
+  color: #697789;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.selection-summary strong {
+  color: #17202a;
+  font-size: 15px;
+}
+
+.classification-levels {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.classification-card {
+  width: 100%;
+  min-height: 88px;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px 10px;
+  padding: 14px;
+  border: 1px solid #d7dde5;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1f2933;
+  text-align: left;
+  cursor: pointer;
+}
+
+.classification-card:hover,
+.classification-card:focus {
+  border-color: #2563eb;
+  outline: none;
+}
+
+.classification-card--selected {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.18);
+}
+
+.classification-card:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.classification-card__label {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.classification-card__code {
+  align-self: start;
+  color: #52616f;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.classification-card__description {
+  grid-column: 1 / -1;
+  color: #52616f;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.outlook-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid #d7dde5;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.outlook-option input {
+  margin-top: 2px;
+}
+
+.status-message {
+  min-height: 40px;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.status-message--info {
+  background: #eef2f6;
+  color: #334155;
+}
+
+.status-message--success {
+  background: #e9f7ef;
+  color: #166534;
+}
+
+.status-message--error {
+  background: #fdecec;
+  color: #991b1b;
+}
+
+.mvp-note {
+  margin: 0;
+  color: #697789;
+  font-size: 12px;
+  line-height: 1.45;
+}

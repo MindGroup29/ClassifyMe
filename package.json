@@ -13,6 +13,7 @@
   },
   "scripts": {
     "build": "webpack --mode production",
+    "build:github-pages": "webpack --mode production --env githubPages=true",
     "build:dev": "webpack --mode development",
     "dev-server": "webpack serve --mode development",
     "lint": "office-addin-lint check",
@@ -28,7 +29,9 @@
     "stop": "office-addin-debugging stop manifest.xml",
     "stop:outlook": "office-addin-debugging stop manifest.outlook.xml",
     "validate": "office-addin-manifest validate manifest.xml",
+    "validate:office:production": "office-addin-manifest validate manifest.office.production.xml",
     "validate:outlook": "office-addin-manifest validate manifest.outlook.xml",
+    "validate:outlook:production": "office-addin-manifest validate manifest.outlook.production.xml",
     "watch": "webpack --mode development --watch"
   },
   "dependencies": {

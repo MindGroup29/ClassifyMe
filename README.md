@@ -94,6 +94,13 @@ Valider le manifeste Outlook :
 npm run validate:outlook
 ```
 
+Valider les manifestes production :
+
+```powershell
+npm run validate:office:production
+npm run validate:outlook:production
+```
+
 Lancer l'add-in localement :
 
 ```powershell
@@ -137,6 +144,156 @@ npm run stop:outlook
 ```
 
 Selon le poste, Office ou le navigateur peut demander d'approuver un certificat de developpement local HTTPS.
+
+## Publication GitHub Pages et Microsoft 365
+
+Cette section prepare une publication statique sur GitHub Pages. Elle ne publie rien automatiquement et ne remplace pas une validation fonctionnelle dans Office.
+
+### Prerequis
+
+- Un depot GitHub qui contient ce projet.
+- GitHub Pages active sur le depot.
+- Une URL GitHub Pages au format suivant :
+
+```text
+https://<org>.github.io/<repo>/
+```
+
+- Un compte administrateur Microsoft 365 autorise a charger des add-ins integres dans Microsoft 365 Admin Center.
+- Un groupe pilote Microsoft 365 dedie au deploiement initial.
+
+### URL de production a modifier
+
+Les manifestes production utilisent volontairement une URL generique :
+
+```text
+https://your-org.github.io/your-repo/
+```
+
+Avant publication, remplacer cette valeur par l'URL GitHub Pages reelle, ou definir la variable d'environnement `CLASSIFYME_PRODUCTION_BASE_URL` avant le build GitHub Pages :
+
+```powershell
+$env:CLASSIFYME_PRODUCTION_BASE_URL="https://<org>.github.io/<repo>/"
+npm run build:github-pages
+```
+
+La commande accepte aussi une valeur Webpack explicite :
+
+```powershell
+npm run build:github-pages -- --env productionUrl=https://<org>.github.io/<repo>/
+```
+
+### Commandes de build
+
+La commande de build production standard du projet est :
+
+```powershell
+npm run build
+```
+
+Elle genere le dossier statique `dist`.
+
+Pour GitHub Pages, utiliser :
+
+```powershell
+npm run build:github-pages
+```
+
+Cette commande genere le dossier statique `docs`, compatible avec l'option GitHub Pages "Deploy from a branch" puis dossier `/docs`.
+
+### Structure GitHub Pages attendue
+
+Apres `npm run build:github-pages`, le dossier `docs` doit contenir notamment :
+
+```text
+docs/
+  assets/
+    icon-16.png
+    icon-32.png
+    icon-80.png
+  commands.html
+  taskpane.html
+  manifest.office.production.xml
+  manifest.outlook.production.xml
+```
+
+Les fichiers JavaScript et CSS generes par Webpack sont egalement presents dans `docs`.
+
+### Manifestes production
+
+Les manifestes de production a utiliser pour Microsoft 365 sont :
+
+- `manifest.office.production.xml` pour Word, Excel et PowerPoint ;
+- `manifest.outlook.production.xml` pour Outlook en mode composition.
+
+Ces fichiers doivent pointer vers l'URL GitHub Pages de production. Ils ne doivent contenir aucune URL `localhost`.
+
+Valider les manifestes avant publication :
+
+```powershell
+npm run validate:office:production
+npm run validate:outlook:production
+```
+
+### Configuration GitHub Pages
+
+1. Executer le build GitHub Pages avec l'URL de production correcte.
+2. Committer le dossier `docs` genere.
+3. Dans GitHub, ouvrir les parametres du depot.
+4. Aller dans Pages.
+5. Choisir la source "Deploy from a branch".
+6. Choisir la branche de publication.
+7. Choisir le dossier `/docs`.
+8. Attendre la publication GitHub Pages.
+9. Verifier en HTTPS :
+   - `https://<org>.github.io/<repo>/taskpane.html`
+   - `https://<org>.github.io/<repo>/commands.html`
+   - `https://<org>.github.io/<repo>/assets/icon-16.png`
+   - `https://<org>.github.io/<repo>/assets/icon-32.png`
+   - `https://<org>.github.io/<repo>/assets/icon-80.png`
+
+### Sideload avec manifest production
+
+Pour une verification avant deploiement centralise :
+
+1. Verifier que GitHub Pages sert bien `taskpane.html` et les icones en HTTPS.
+2. Ouvrir `manifest.office.production.xml` et confirmer que les URL pointent vers GitHub Pages.
+3. Sideload `manifest.office.production.xml` pour verifier Word, Excel et PowerPoint.
+4. Ouvrir `manifest.outlook.production.xml` et confirmer que les URL pointent vers GitHub Pages.
+5. Sideload `manifest.outlook.production.xml` pour verifier Outlook en mode composition.
+
+### Deploiement Microsoft 365 Admin Center
+
+1. Ouvrir Microsoft 365 Admin Center.
+2. Aller dans Settings > Integrated apps.
+3. Choisir Upload custom apps.
+4. Charger `manifest.office.production.xml`.
+5. Limiter le deploiement au groupe pilote.
+6. Repeter l'operation avec `manifest.outlook.production.xml`.
+7. Verifier l'apparition de ClassifyMe dans Word, Excel, PowerPoint et Outlook pour un utilisateur pilote.
+8. Elargir le deploiement uniquement apres validation metier et support.
+
+### Limites connues de la publication statique
+
+- GitHub Pages sert uniquement des fichiers statiques : aucune logique serveur n'est disponible.
+- Les manifestes doivent etre reconstruits ou modifies si l'URL GitHub Pages change.
+- Le cache navigateur ou Office peut conserver une ancienne version du task pane pendant quelques minutes.
+- Le MVP reste sans chiffrement, DLP, Graph, authentification ou reporting centralise.
+- Le deploiement Microsoft 365 doit d'abord rester limite a un groupe pilote.
+
+### Checklist avant publication
+
+```text
+- [ ] aucune URL localhost dans les manifests production
+- [ ] taskpane accessible en HTTPS
+- [ ] icônes accessibles en HTTPS
+- [ ] Word testé
+- [ ] Excel testé
+- [ ] PowerPoint testé
+- [ ] Outlook testé
+- [ ] pilote M365 créé
+- [ ] add-in déployé uniquement au groupe pilote
+```
 
 ## Verification manuelle dans Word
 
