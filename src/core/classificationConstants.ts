@@ -12,6 +12,8 @@ export interface ClassificationLevel {
 
 export const CLASSIFICATION_TOOL_NAME = "ClassifyMe";
 export const CLASSIFICATION_BANNER_TAG = "ClassifyMe.ClassificationBanner";
+export const OUTLOOK_BANNER_START_MARKER = "<!-- ClassifyMe:BannerStart -->";
+export const OUTLOOK_BANNER_END_MARKER = "<!-- ClassifyMe:BannerEnd -->";
 export const POWERPOINT_FOOTER_SHAPE_NAME = "ClassifyMeFooter";
 export const EXCEL_BANNER_SHAPE_NAME = "ClassifyMeBanner";
 
@@ -27,8 +29,8 @@ export const CLASSIFICATION_LEVELS: ClassificationLevel[] = [
     code: "PUBLIC",
     label: "Public",
     description: "Information intended for public sharing.",
-    bannerTitle: "",
-    bannerText: "",
+    bannerTitle: "Classification: PUBLIC",
+    bannerText: "Ce document peut etre diffuse publiquement.",
     bannerColor: "#1f2933",
     bannerBackground: "#baf1cf",
   },

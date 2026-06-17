@@ -24,8 +24,11 @@
     "start:word": "office-addin-debugging start manifest.xml --app word",
     "start:powerpoint": "office-addin-debugging start manifest.xml --app powerpoint",
     "start:excel": "office-addin-debugging start manifest.xml --app excel",
+    "start:outlook": "office-addin-debugging start manifest.outlook.xml --app outlook",
     "stop": "office-addin-debugging stop manifest.xml",
+    "stop:outlook": "office-addin-debugging stop manifest.outlook.xml",
     "validate": "office-addin-manifest validate manifest.xml",
+    "validate:outlook": "office-addin-manifest validate manifest.outlook.xml",
     "watch": "webpack --mode development --watch"
   },
   "dependencies": {

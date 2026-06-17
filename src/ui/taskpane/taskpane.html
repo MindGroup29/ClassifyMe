@@ -21,7 +21,7 @@
         <header class="app-header">
             <p class="app-kicker">Office classification MVP</p>
             <h1>ClassifyMe</h1>
-            <p class="app-subtitle">Classify this document before sharing.</p>
+            <p class="app-subtitle" id="host-subtitle">Classify this document before sharing.</p>
         </header>
 
         <section class="selection-summary" aria-live="polite">
@@ -31,12 +31,17 @@
 
         <section class="classification-levels" id="classification-levels" aria-label="Classification levels"></section>
 
+        <label id="outlook-subject-prefix-option" class="outlook-option" style="display: none;">
+            <input id="add-subject-prefix" type="checkbox" />
+            <span>Ajouter un prefixe a l'objet du courriel</span>
+        </label>
+
         <p id="status-message" class="status-message status-message--info" role="status">
             Choose a level to apply it.
         </p>
 
         <p class="mvp-note">
-            This MVP adds a visible marker and limited metadata only. It does not encrypt or restrict the file.
+            This MVP adds a visible marker and limited metadata only. It does not encrypt or restrict the file or email.
         </p>
     </main>
 </body>

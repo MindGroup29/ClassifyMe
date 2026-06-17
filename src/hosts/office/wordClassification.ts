@@ -50,11 +50,6 @@ async function applyDocumentBanner(
     existingHeaderBanners.items.forEach((banner) => banner.delete(false));
   });
 
-  // PUBLIC has no visible banner in classification-rules.md, so an existing ClassifyMe banner is removed.
-  // if (level.code === "PUBLIC") {
-  //   return;
-  // }
-
   // Word stores headers per section. Applying the banner to each primary header keeps
   // the classification visible throughout documents that contain section breaks.
   headerBannerCollections.forEach(({ header }) => {

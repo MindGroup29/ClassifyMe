@@ -131,6 +131,23 @@ body {
   line-height: 1.35;
 }
 
+.outlook-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid #d7dde5;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.outlook-option input {
+  margin-top: 2px;
+}
+
 .status-message {
   min-height: 40px;
   box-sizing: border-box;
