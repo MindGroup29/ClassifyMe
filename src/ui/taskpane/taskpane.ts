@@ -20,17 +20,21 @@ Office.onReady((info) => {
   document.getElementById("app-body").style.display = "flex";
 
   if (isSupportedOfficeHost(activeHost)) {
+    updateHostSpecificUi(activeHost);
     renderClassificationCards();
     updateSelectedLevel(undefined);
     showStatus(
-      `Choose a level to apply it to the ${getOfficeHostDocumentName(activeHost)}.`,
+      `Choisissez un niveau pour l'appliquer sur ce ${getOfficeHostDocumentName(activeHost)}.`,
       "info"
     );
     return;
   }
 
   updateSelectedLevel(undefined);
-  showStatus("ClassifyMe supports Word, PowerPoint and Excel only in this MVP.", "error");
+  showStatus(
+    "ClassifyMe prend en charge Word, PowerPoint, Excel et Outlook en mode composition uniquement dans ce MVP.",
+    "error"
+  );
 });
 
 function renderClassificationCards(): void {
@@ -86,16 +90,42 @@ async function applyClassification(level: ClassificationLevel): Promise<void> {
   updateSelectedLevel(level);
 
   setBusyState(true);
-  showStatus(`Applying ${level.label} classification...`, "info");
+  showStatus(`Application de la classification ${level.label}...`, "info");
 
   try {
-    const message = await applyOfficeClassification(activeHost, level);
+    const message = await applyOfficeClassification(activeHost, level, {
+      addSubjectPrefix: shouldAddSubjectPrefix(),
+    });
     showStatus(message, isSupportedOfficeHost(activeHost) ? "success" : "error");
   } catch (error) {
-    showStatus(`Unable to apply classification: ${getErrorMessage(error)}`, "error");
+    showStatus(`Impossible d'appliquer la classification : ${getErrorMessage(error)}`, "error");
   } finally {
     setBusyState(false);
   }
+}
+
+function updateHostSpecificUi(host: Office.HostType | undefined): void {
+  const subtitle = document.getElementById("host-subtitle");
+  const outlookOption = document.getElementById("outlook-subject-prefix-option");
+
+  if (host === Office.HostType.Outlook) {
+    subtitle.textContent = "Classifiez cet email avant l'envoi.";
+    outlookOption.style.display = "flex";
+    return;
+  }
+
+  subtitle.textContent = "Classifiez ce document avant le partage.";
+  outlookOption.style.display = "none";
+}
+
+function shouldAddSubjectPrefix(): boolean {
+  if (activeHost !== Office.HostType.Outlook) {
+    return false;
+  }
+
+  const checkbox = document.getElementById("add-subject-prefix") as HTMLInputElement | null;
+
+  return Boolean(checkbox?.checked);
 }
 
 function setBusyState(isBusy: boolean): void {
