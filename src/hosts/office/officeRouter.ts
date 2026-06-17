@@ -68,7 +68,7 @@ export async function applyOfficeClassification(
     const metadataMessage = result.metadataSaved
       ? ""
       : " Les metadonnees Outlook n'ont pas pu etre enregistrees dans cet environnement.";
-    const subjectMessage = result.subjectUpdated ? " Prefixe d'objet mis a jour." : "";
+    const subjectMessage = result.subjectUpdated ? " Objet mis a jour." : "";
 
     return `Classification ${level.label} appliquee a cet email.${subjectMessage}${metadataMessage}`;
   }

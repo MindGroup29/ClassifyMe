@@ -35,11 +35,9 @@ export async function applyOutlookClassification(
 
   await setBodyHtml(item, updatedHtmlBody);
 
-  let subjectUpdated = false;
-  if (options.addSubjectPrefix) {
-    await applySubjectPrefix(item, level);
-    subjectUpdated = true;
-  }
+  const subjectUpdated = options.addSubjectPrefix
+    ? await applySubjectPrefix(item, level)
+    : await removeSubjectPrefix(item);
 
   const metadataSaved = await trySaveCustomProperties(item, level);
 
@@ -102,14 +100,34 @@ function removeExistingBanner(htmlBody: string): string {
 async function applySubjectPrefix(
   item: Office.MessageCompose,
   level: ClassificationLevel
-): Promise<void> {
+): Promise<boolean> {
   const currentSubject = await getSubject(item);
   const subjectWithoutClassifyMePrefix = (currentSubject || "").replace(
     CLASSIFYME_SUBJECT_PREFIX_PATTERN,
     ""
   );
+  const updatedSubject = `[${level.code}] ${subjectWithoutClassifyMePrefix}`.trim();
 
-  await setSubject(item, `[${level.code}] ${subjectWithoutClassifyMePrefix}`.trim());
+  if (updatedSubject === currentSubject) {
+    return false;
+  }
+
+  await setSubject(item, updatedSubject);
+
+  return true;
+}
+
+async function removeSubjectPrefix(item: Office.MessageCompose): Promise<boolean> {
+  const currentSubject = await getSubject(item);
+  const updatedSubject = (currentSubject || "").replace(CLASSIFYME_SUBJECT_PREFIX_PATTERN, "");
+
+  if (updatedSubject === currentSubject) {
+    return false;
+  }
+
+  await setSubject(item, updatedSubject);
+
+  return true;
 }
 
 async function trySaveCustomProperties(

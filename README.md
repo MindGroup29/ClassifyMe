@@ -203,9 +203,12 @@ Selon le poste, Office ou le navigateur peut demander d'approuver un certificat 
 12. Cliquer sur Secret.
 13. Verifier que le bandeau est remplace sans doublon.
 14. Verifier que le prefixe objet devient [SECRET] sans doublon.
+15. Decocher Ajouter un prefixe a l'objet du courriel.
+16. Cliquer de nouveau sur Secret.
+17. Verifier que le prefixe [SECRET] est retire de l'objet.
 ```
 
-L'option Outlook de prefixe d'objet est volontairement desactivee par defaut. Quand elle est cochee, ClassifyMe ajoute ou remplace uniquement les prefixes connus `[PUBLIC]`, `[RESTREINT]`, `[RESTRAINT]`, `[CONFIDENTIEL]` et `[SECRET]`. Quand elle est decochee, l'objet existant n'est pas modifie.
+L'option Outlook de prefixe d'objet est volontairement desactivee par defaut. Quand elle est cochee, ClassifyMe ajoute ou remplace uniquement les prefixes connus `[PUBLIC]`, `[RESTREINT]`, `[RESTRAINT]`, `[CONFIDENTIEL]` et `[SECRET]`. Quand elle est decochee, ClassifyMe retire un prefixe connu existant sans modifier le reste de l'objet.
 
 ## Ce qui fonctionne
 
@@ -228,7 +231,7 @@ L'option Outlook de prefixe d'objet est volontairement desactivee par defaut. Qu
 - Dans Excel, les proprietes personnalisees `ClassificationLevel`, `ClassificationLabel`, `ClassificationUpdatedAt` et `ClassificationTool` sont mises a jour si l'API Excel les accepte dans l'environnement Office utilise.
 - Dans Outlook compose mode, un bandeau HTML identifie par les marqueurs `ClassifyMe:BannerStart` et `ClassifyMe:BannerEnd` est insere en haut du corps du mail.
 - Dans Outlook compose mode, un ancien bandeau ClassifyMe est remplace avant insertion pour eviter les doublons.
-- Dans Outlook compose mode, l'option de prefixe objet ajoute ou remplace le prefixe de classification seulement si elle est cochee.
+- Dans Outlook compose mode, l'option de prefixe objet ajoute ou remplace le prefixe de classification si elle est cochee, et retire un prefixe connu si elle est decochee.
 - Dans Outlook compose mode, les proprietes personnalisees `ClassificationLevel`, `ClassificationLabel`, `ClassificationUpdatedAt` et `ClassificationTool` sont enregistrees si l'API Outlook et le compte courant l'acceptent.
 
 ## Limites connues du MVP
@@ -251,7 +254,7 @@ L'option Outlook de prefixe d'objet est volontairement desactivee par defaut. Qu
 - Les proprietes personnalisees Outlook peuvent ne pas etre enregistrees selon le client, l'etat reseau ou le type de compte. Dans ce cas, le bandeau reste applique.
 - Les proprietes personnalisees Outlook enregistrees en mode composition ne sont pas transmises aux destinataires.
 - Le bandeau Outlook est applique au corps HTML courant du brouillon. Les emails au format texte brut peuvent refuser l'insertion HTML selon le client Outlook.
-- Le prefixe d'objet Outlook n'est jamais ajoute si l'option est decochee.
+- Le prefixe d'objet Outlook n'est jamais conserve par ClassifyMe si l'option est decochee et si le prefixe existant fait partie des prefixes connus.
 - Le MVP ne classifie pas automatiquement les reponses ou les fils de conversation Outlook.
 - Le MVP ne lit pas et ne classe pas les emails recus.
 - Le fichier n'est pas chiffre.
