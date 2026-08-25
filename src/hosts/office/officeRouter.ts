@@ -46,12 +46,12 @@ export async function applyOfficeClassification(
 ): Promise<string> {
   if (host === Office.HostType.Word) {
     await applyWordClassification(level);
-    return `Classification ${level.label} appliquee.`;
+    return `Classification ${level.label} appliquée.`;
   }
 
   if (host === Office.HostType.PowerPoint) {
     const slideCount = await applyPowerPointClassification(level);
-    return `Classification ${level.label} appliquee a ${slideCount} slide(s).`;
+    return `Classification ${level.label} appliquée a ${slideCount} slide(s).`;
   }
 
   if (host === Office.HostType.Excel) {
@@ -60,17 +60,17 @@ export async function applyOfficeClassification(
       ? ""
       : " Les metadonnees du classeur n'ont pas pu etre enregistrees dans cet environnement Excel.";
 
-    return `Classification ${level.label} appliquee a ${result.worksheetCount} feuille(s).${metadataMessage}`;
+    return `Classification ${level.label} appliquée a ${result.worksheetCount} feuille(s).${metadataMessage}`;
   }
 
   if (host === Office.HostType.Outlook) {
     const result = await applyOutlookClassification(level, options);
     const metadataMessage = result.metadataSaved
       ? ""
-      : " Les metadonnees Outlook n'ont pas pu etre enregistrees dans cet environnement.";
+      : " Les métadonnées Outlook n'ont pas pu être enregistrées dans cet environnement.";
     const subjectMessage = result.subjectUpdated ? " Objet mis a jour." : "";
 
-    return `Classification ${level.label} appliquee a cet email.${subjectMessage}${metadataMessage}`;
+    return `Classification ${level.label} appliquée à cet email.${subjectMessage}${metadataMessage}`;
   }
 
   return "ClassifyMe prend en charge Word, PowerPoint, Excel et Outlook en mode composition uniquement dans ce MVP.";
