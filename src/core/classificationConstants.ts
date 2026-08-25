@@ -28,7 +28,7 @@ export const CLASSIFICATION_LEVELS: ClassificationLevel[] = [
   {
     code: "PUBLIC",
     label: "Public",
-    description: "Information intended for public sharing.",
+    description: "Information destinée à être partagée publiquement.",
     bannerTitle: "Classification : PUBLIC",
     bannerText: "Ce document peut être diffusé publiquement.",
     bannerColor: "#1f2933",
@@ -37,7 +37,7 @@ export const CLASSIFICATION_LEVELS: ClassificationLevel[] = [
   {
     code: "RESTREINT",
     label: "Restreint",
-    description: "Information reserved for company employees.",
+    description: "Information réservée aux collaborateurs de l’entreprise.",
     bannerTitle: "Classification : RESTREINT",
     bannerText: "Ce document est destiné à un usage restreint à l'entreprise.",
     bannerColor: "#1f2933",
@@ -46,7 +46,7 @@ export const CLASSIFICATION_LEVELS: ClassificationLevel[] = [
   {
     code: "CONFIDENTIEL",
     label: "Confidentiel",
-    description: "Information whose uncontrolled disclosure may harm the company.",
+    description: "Information dont la divulgation non maîtrisée peut porter préjudice à l’entreprise.",
     bannerTitle: "Classification : CONFIDENTIEL",
     bannerText:
       "Ce document contient des informations confidentielles. Sa diffusion doit être limitée aux personnes autorisées.",
@@ -56,7 +56,7 @@ export const CLASSIFICATION_LEVELS: ClassificationLevel[] = [
   {
     code: "SECRET",
     label: "Secret",
-    description: "Critical information requiring strict control before sharing.",
+    description: "Information critique nécessitant un contrôle strict avant tout partage.",
     bannerTitle: "Classification : SECRET",
     bannerText:
       "Ce document contient des informations secrètes. Sa diffusion, sa copie et son transfert doivent être strictement maitrisés.",
