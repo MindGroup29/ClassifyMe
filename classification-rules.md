@@ -126,7 +126,7 @@ Ces codes pourront servir ultérieurement à migrer vers des étiquettes Microso
 
 - [ ] Le marquage est-il recommandé ou obligatoire ?
 - [x] Le niveau `PUBLIC` doit-il afficher un bandeau ? OUI
-- [ ] Le préfixe objet email est-il autorisé ?
+- [x] Le préfixe objet email est-il autorisé ? OUI
 - [ ] Faut-il afficher une alerte si aucun niveau n'est choisi ?
 - [ ] Le bandeau doit-il être inséré en haut ou en bas des documents ?
 - [ ] Les documents existants doivent-ils être marqués lors de leur ouverture ?
