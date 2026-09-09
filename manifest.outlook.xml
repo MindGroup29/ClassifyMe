@@ -34,6 +34,7 @@
   <Permissions>ReadWriteItem</Permissions>
   <Rule xsi:type="RuleCollection" Mode="Or">
     <Rule xsi:type="ItemIs" ItemType="Message" FormType="Edit"/>
+    <Rule xsi:type="ItemIs" ItemType="Appointment" FormType="Edit"/>
   </Rule>
   <DisableEntityHighlighting>false</DisableEntityHighlighting>
   <VersionOverrides xmlns="http://schemas.microsoft.com/office/mailappversionoverrides"
@@ -69,6 +70,28 @@
               </Group>
             </OfficeTab>
           </ExtensionPoint>
+          <ExtensionPoint xsi:type="AppointmentOrganizerCommandSurface">
+            <OfficeTab id="TabDefault">
+              <Group id="ClassifyMeAppointmentComposeGroup">
+                <Label resid="CommandsGroup.Label"/>
+                <Control xsi:type="Button" id="ClassifyMeAppointmentComposeTaskpaneButton">
+                  <Label resid="ApptTaskpaneButton.Label"/>
+                  <Supertip>
+                    <Title resid="ApptTaskpaneButton.Label"/>
+                    <Description resid="ApptTaskpaneButton.Tooltip"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16x16"/>
+                    <bt:Image size="32" resid="Icon.32x32"/>
+                    <bt:Image size="80" resid="Icon.80x80"/>
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <SourceLocation resid="Taskpane.Url"/>
+                  </Action>
+                </Control>
+              </Group>
+            </OfficeTab>
+          </ExtensionPoint>
         </DesktopFormFactor>
       </Host>
     </Hosts>
@@ -85,9 +108,11 @@
       <bt:ShortStrings>
         <bt:String id="CommandsGroup.Label" DefaultValue="ClassifyMe DEV"/>
         <bt:String id="TaskpaneButton.Label" DefaultValue="Classify email DEV"/>
+        <bt:String id="ApptTaskpaneButton.Label" DefaultValue="Classify meeting DEV"/>
       </bt:ShortStrings>
       <bt:LongStrings>
         <bt:String id="TaskpaneButton.Tooltip" DefaultValue="Open ClassifyMe DEV to classify this email"/>
+        <bt:String id="ApptTaskpaneButton.Tooltip" DefaultValue="Open ClassifyMe DEV to classify this meeting"/>
       </bt:LongStrings>
     </Resources>
   </VersionOverrides>

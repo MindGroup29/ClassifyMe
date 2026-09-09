@@ -1,6 +1,7 @@
 /*
  * Outlook-specific classification behavior.
- * The MVP only supports message compose mode: it updates the draft body and, optionally, the subject.
+ * The MVP supports email and meeting organizer compose mode: it updates the draft body and,
+ * optionally, the subject.
  */
 
 /* global Office, DOMParser, NodeFilter, console, Document, Element, Comment, ChildNode */
@@ -26,43 +27,68 @@ export interface OutlookClassificationOptions {
 export interface OutlookClassificationResult {
   metadataSaved: boolean;
   subjectUpdated: boolean;
+  itemType: OutlookComposeItemType;
 }
+
+export type OutlookComposeItemType = "message" | "appointment";
+
+// These members are shared by MessageCompose and AppointmentCompose in the Office.js API.
+type OutlookComposeItem = Office.MessageCompose | Office.AppointmentCompose;
 
 export async function applyOutlookClassification(
   level: ClassificationLevel,
   options: OutlookClassificationOptions
 ): Promise<OutlookClassificationResult> {
-  const item = getComposeMessage();
+  const item = getComposeItem();
+  const itemType = getOutlookComposeItemType(item);
   const currentHtmlBody = await getBodyHtml(item);
-  const updatedHtmlBody = addOrReplaceBanner(currentHtmlBody, buildOutlookBannerHtml(level));
+  const updatedHtmlBody = addOrReplaceBanner(
+    currentHtmlBody,
+    buildOutlookBannerHtml(level, item.itemType)
+  );
 
   await setBodyHtml(item, updatedHtmlBody);
 
-  const subjectUpdated = options.addSubjectPrefix
-    ? await applySubjectPrefix(item, level)
-    : await removeSubjectPrefix(item);
+  const subjectUpdated = await updateSubjectPrefix(item, itemType, level, options);
 
   const metadataSaved = await trySaveCustomProperties(item, level);
 
-  return { metadataSaved, subjectUpdated };
+  return { metadataSaved, subjectUpdated, itemType };
 }
 
-function getComposeMessage(): Office.MessageCompose {
+function getComposeItem(): OutlookComposeItem {
   const mailbox = Office.context.mailbox;
-  const item = mailbox?.item as Partial<Office.MessageCompose> | undefined;
+  const item = mailbox?.item as Partial<OutlookComposeItem> | undefined;
 
   if (!item?.body || !item?.subject || typeof item.loadCustomPropertiesAsync !== "function") {
-    throw new Error(
-      "Cet element Outlook ne peut pas etre classifie. Ouvrez un message en mode composition."
-    );
+    throw new Error("Cet élément Outlook ne peut pas être classifié dans le mode actuel.");
   }
 
-  return item as Office.MessageCompose;
+  if (item.itemType === Office.MailboxEnums.ItemType.Message) {
+    return item as Office.MessageCompose;
+  }
+
+  if (item.itemType === Office.MailboxEnums.ItemType.Appointment) {
+    return item as Office.AppointmentCompose;
+  }
+
+  throw new Error("Cet élément Outlook ne peut pas être classifié dans le mode actuel.");
 }
 
-function buildOutlookBannerHtml(level: ClassificationLevel): string {
+function getOutlookComposeItemType(item: OutlookComposeItem): OutlookComposeItemType {
+  return item.itemType === Office.MailboxEnums.ItemType.Appointment ? "appointment" : "message";
+}
+
+function buildOutlookBannerHtml(
+  level: ClassificationLevel,
+  itemType: Office.MailboxEnums.ItemType | string
+): string {
   const title = escapeHtml(level.bannerTitle || `Classification: ${level.code}`);
-  const text = escapeHtml(level.bannerText);
+  const text = escapeHtml(
+    itemType === Office.MailboxEnums.ItemType.Appointment
+      ? level.meetingBannerText
+      : level.bannerText
+  );
 
   return `<div id="${OUTLOOK_BANNER_ELEMENT_ID}" style="border:1px solid #999;padding:8px;margin-bottom:12px;font-family:Arial,sans-serif;font-size:12px;color:${level.bannerColor};background:${level.bannerBackground};">
   <strong>${title}</strong><br>
@@ -210,7 +236,7 @@ function normalizeHtmlText(value: string): string {
 }
 
 async function applySubjectPrefix(
-  item: Office.MessageCompose,
+  item: OutlookComposeItem,
   level: ClassificationLevel
 ): Promise<boolean> {
   const currentSubject = await getSubject(item);
@@ -229,7 +255,25 @@ async function applySubjectPrefix(
   return true;
 }
 
-async function removeSubjectPrefix(item: Office.MessageCompose): Promise<boolean> {
+async function updateSubjectPrefix(
+  item: OutlookComposeItem,
+  itemType: OutlookComposeItemType,
+  level: ClassificationLevel,
+  options: OutlookClassificationOptions
+): Promise<boolean> {
+  if (options.addSubjectPrefix) {
+    return applySubjectPrefix(item, level);
+  }
+
+  /*
+   * Email compose already removes a ClassifyMe prefix when the option is unchecked.
+   * Keep that established behavior unchanged. For meetings, an unchecked option must
+   * leave the subject untouched, as the user did not request a meeting subject update.
+   */
+  return itemType === "message" ? removeSubjectPrefix(item) : false;
+}
+
+async function removeSubjectPrefix(item: OutlookComposeItem): Promise<boolean> {
   const currentSubject = await getSubject(item);
   const updatedSubject = (currentSubject || "").replace(CLASSIFYME_SUBJECT_PREFIX_PATTERN, "");
 
@@ -243,7 +287,7 @@ async function removeSubjectPrefix(item: Office.MessageCompose): Promise<boolean
 }
 
 async function trySaveCustomProperties(
-  item: Office.MessageCompose,
+  item: OutlookComposeItem,
   level: ClassificationLevel
 ): Promise<boolean> {
   try {
@@ -265,7 +309,7 @@ async function trySaveCustomProperties(
   }
 }
 
-function getBodyHtml(item: Office.MessageCompose): Promise<string> {
+function getBodyHtml(item: OutlookComposeItem): Promise<string> {
   return new Promise((resolve, reject) => {
     item.body.getAsync(Office.CoercionType.Html, (result) => {
       handleAsyncResult(result, resolve, reject);
@@ -273,7 +317,7 @@ function getBodyHtml(item: Office.MessageCompose): Promise<string> {
   });
 }
 
-function setBodyHtml(item: Office.MessageCompose, htmlBody: string): Promise<void> {
+function setBodyHtml(item: OutlookComposeItem, htmlBody: string): Promise<void> {
   return new Promise((resolve, reject) => {
     item.body.setAsync(htmlBody, { coercionType: Office.CoercionType.Html }, (result) => {
       handleAsyncResult(result, resolve, reject);
@@ -281,7 +325,7 @@ function setBodyHtml(item: Office.MessageCompose, htmlBody: string): Promise<voi
   });
 }
 
-function getSubject(item: Office.MessageCompose): Promise<string> {
+function getSubject(item: OutlookComposeItem): Promise<string> {
   return new Promise((resolve, reject) => {
     item.subject.getAsync((result) => {
       handleAsyncResult(result, resolve, reject);
@@ -289,7 +333,7 @@ function getSubject(item: Office.MessageCompose): Promise<string> {
   });
 }
 
-function setSubject(item: Office.MessageCompose, subject: string): Promise<void> {
+function setSubject(item: OutlookComposeItem, subject: string): Promise<void> {
   return new Promise((resolve, reject) => {
     item.subject.setAsync(subject, (result) => {
       handleAsyncResult(result, resolve, reject);
@@ -297,7 +341,7 @@ function setSubject(item: Office.MessageCompose, subject: string): Promise<void>
   });
 }
 
-function loadCustomProperties(item: Office.MessageCompose): Promise<Office.CustomProperties> {
+function loadCustomProperties(item: OutlookComposeItem): Promise<Office.CustomProperties> {
   return new Promise((resolve, reject) => {
     item.loadCustomPropertiesAsync((result) => {
       handleAsyncResult(result, resolve, reject);

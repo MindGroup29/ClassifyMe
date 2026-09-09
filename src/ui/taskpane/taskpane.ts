@@ -109,7 +109,7 @@ function updateHostSpecificUi(host: Office.HostType | undefined): void {
   const outlookOption = document.getElementById("outlook-subject-prefix-option");
 
   if (host === Office.HostType.Outlook) {
-    subtitle.textContent = "Classifiez cet email avant l'envoi.";
+    subtitle.textContent = "Classifiez cet email ou cette réunion avant l'envoi.";
     outlookOption.style.display = "flex";
     return;
   }

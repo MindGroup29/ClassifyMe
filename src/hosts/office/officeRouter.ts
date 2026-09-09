@@ -70,7 +70,9 @@ export async function applyOfficeClassification(
       : " Les métadonnées Outlook n'ont pas pu être enregistrées dans cet environnement.";
     const subjectMessage = result.subjectUpdated ? " Objet mis a jour." : "";
 
-    return `Classification ${level.label} appliquée à cet email.${subjectMessage}${metadataMessage}`;
+    const itemLabel = result.itemType === "appointment" ? "cette réunion" : "cet email";
+
+    return `Classification ${level.label} appliquée à ${itemLabel}.${subjectMessage}${metadataMessage}`;
   }
 
   return "ClassifyMe prend en charge Word, PowerPoint, Excel et Outlook en mode composition uniquement dans ce MVP.";
