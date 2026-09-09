@@ -4,12 +4,12 @@
   xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
   xmlns:mailappor="http://schemas.microsoft.com/office/mailappversionoverrides/1.1"
   xsi:type="MailApp">
-  <Id>c6757210-1130-437c-b839-13a5dbdf23ad</Id>
+  <Id>c0decafe-beef-face-acde-c0ffee000002</Id>
   <Version>1.0.0.0</Version>
   <ProviderName>ClassifyMe</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
-  <DisplayName DefaultValue="ClassifyMe"/>
-  <Description DefaultValue="Manual email classification MVP for Outlook compose mode."/>
+  <DisplayName DefaultValue="ClassifyMe DEV"/>
+  <Description DefaultValue="ClassifyMe DEV - Development version."/>
   <IconUrl DefaultValue="https://MindGroup29.github.io/ClassifyMe/assets/icon-32.png"/>
   <HighResolutionIconUrl DefaultValue="https://MindGroup29.github.io/ClassifyMe/assets/icon-64.png"/>
   <SupportUrl DefaultValue="https://www.contoso.com/help"/>
@@ -83,11 +83,11 @@
         <bt:Url id="Taskpane.Url" DefaultValue="https://MindGroup29.github.io/ClassifyMe/taskpane.html"/>
       </bt:Urls>
       <bt:ShortStrings>
-        <bt:String id="CommandsGroup.Label" DefaultValue="ClassifyMe"/>
-        <bt:String id="TaskpaneButton.Label" DefaultValue="Classify email"/>
+        <bt:String id="CommandsGroup.Label" DefaultValue="ClassifyMe DEV"/>
+        <bt:String id="TaskpaneButton.Label" DefaultValue="Classify email DEV"/>
       </bt:ShortStrings>
       <bt:LongStrings>
-        <bt:String id="TaskpaneButton.Tooltip" DefaultValue="Open ClassifyMe to classify this email"/>
+        <bt:String id="TaskpaneButton.Tooltip" DefaultValue="Open ClassifyMe DEV to classify this email"/>
       </bt:LongStrings>
     </Resources>
   </VersionOverrides>
