@@ -12,6 +12,11 @@ export interface ClassificationLevel {
 
 export const CLASSIFICATION_TOOL_NAME = "ClassifyMe";
 export const CLASSIFICATION_BANNER_TAG = "ClassifyMe.ClassificationBanner";
+// A real HTML element identifier is more resilient than HTML comments when Outlook rewrites a draft body.
+export const OUTLOOK_BANNER_ELEMENT_ID = "classifyme-classification-banner";
+// Outlook on the web can add this prefix to id and class attributes while rendering email HTML.
+export const OUTLOOK_WEB_HTML_ID_PREFIX = "x_";
+// These markers identify the first pilot format and are kept only to clean up existing drafts.
 export const OUTLOOK_BANNER_START_MARKER = "<!-- ClassifyMe:BannerStart -->";
 export const OUTLOOK_BANNER_END_MARKER = "<!-- ClassifyMe:BannerEnd -->";
 export const POWERPOINT_FOOTER_SHAPE_NAME = "ClassifyMeFooter";
@@ -46,7 +51,8 @@ export const CLASSIFICATION_LEVELS: ClassificationLevel[] = [
   {
     code: "CONFIDENTIEL",
     label: "Confidentiel",
-    description: "Information dont la divulgation non maîtrisée peut porter préjudice à l’entreprise.",
+    description:
+      "Information dont la divulgation non maîtrisée peut porter préjudice à l’entreprise.",
     bannerTitle: "Classification : CONFIDENTIEL",
     bannerText:
       "Ce document contient des informations confidentielles. Sa diffusion doit être limitée aux personnes autorisées.",

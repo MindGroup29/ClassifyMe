@@ -3,14 +3,17 @@
  * The MVP only supports message compose mode: it updates the draft body and, optionally, the subject.
  */
 
-/* global Office */
+/* global Office, DOMParser, NodeFilter, console, Document, Element, Comment, ChildNode */
 
 import {
+  CLASSIFICATION_LEVELS,
   CLASSIFICATION_PROPERTY_NAMES,
   CLASSIFICATION_TOOL_NAME,
   ClassificationLevel,
+  OUTLOOK_BANNER_ELEMENT_ID,
   OUTLOOK_BANNER_END_MARKER,
   OUTLOOK_BANNER_START_MARKER,
+  OUTLOOK_WEB_HTML_ID_PREFIX,
 } from "../../core/classificationConstants";
 
 const CLASSIFYME_SUBJECT_PREFIX_PATTERN =
@@ -61,40 +64,149 @@ function buildOutlookBannerHtml(level: ClassificationLevel): string {
   const title = escapeHtml(level.bannerTitle || `Classification: ${level.code}`);
   const text = escapeHtml(level.bannerText);
 
-  return `${OUTLOOK_BANNER_START_MARKER}
-<div style="border:1px solid #999;padding:8px;margin-bottom:12px;font-family:Arial,sans-serif;font-size:12px;color:${level.bannerColor};background:${level.bannerBackground};">
+  return `<div id="${OUTLOOK_BANNER_ELEMENT_ID}" style="border:1px solid #999;padding:8px;margin-bottom:12px;font-family:Arial,sans-serif;font-size:12px;color:${level.bannerColor};background:${level.bannerBackground};">
   <strong>${title}</strong><br>
   ${text}
-</div>
-${OUTLOOK_BANNER_END_MARKER}`;
+</div>`;
 }
 
 function addOrReplaceBanner(currentHtmlBody: string, bannerHtml: string): string {
-  const bodyWithoutOldBanner = removeExistingBanner(currentHtmlBody || "");
-  const bodyTagMatch = bodyWithoutOldBanner.match(/<body\b[^>]*>/i);
-
-  if (!bodyTagMatch || bodyTagMatch.index === undefined) {
-    return `${bannerHtml}${bodyWithoutOldBanner}`;
+  if (typeof DOMParser === "undefined") {
+    throw new Error(
+      "Le client Outlook ne permet pas de mettre a jour le bandeau de classification."
+    );
   }
 
-  const insertIndex = bodyTagMatch.index + bodyTagMatch[0].length;
+  const hasHtmlDocument = /<html\b/i.test(currentHtmlBody || "");
+  const parsedDocument = new DOMParser().parseFromString(currentHtmlBody || "", "text/html");
 
-  return `${bodyWithoutOldBanner.slice(0, insertIndex)}${bannerHtml}${bodyWithoutOldBanner.slice(
-    insertIndex
-  )}`;
+  /*
+   * The pilot banner used HTML comments as its only identifier. Outlook on the web and
+   * new Outlook can rewrite the body and discard those comments, so the previous lookup
+   * could no longer find the existing banner. The new banner has a real div id instead.
+   */
+  removeExistingBanners(parsedDocument);
+  parsedDocument.body.insertAdjacentHTML("afterbegin", bannerHtml);
+
+  // Preserve the response HTML as a fragment when Outlook supplied a fragment, and as a
+  // complete document when it supplied one. Only ClassifyMe banner nodes are changed.
+  return hasHtmlDocument ? parsedDocument.documentElement.outerHTML : parsedDocument.body.innerHTML;
 }
 
-function removeExistingBanner(htmlBody: string): string {
-  const startIndex = htmlBody.indexOf(OUTLOOK_BANNER_START_MARKER);
-  const endIndex = htmlBody.indexOf(OUTLOOK_BANNER_END_MARKER);
+function removeExistingBanners(htmlDocument: Document): void {
+  htmlDocument.querySelectorAll("[id]").forEach((element) => {
+    if (isClassifyMeBannerElement(element)) {
+      element.remove();
+    }
+  });
 
-  if (startIndex === -1 || endIndex === -1 || endIndex < startIndex) {
-    return htmlBody;
+  removeLegacyCommentBanners(htmlDocument);
+  removeRecognizableLegacyBanners(htmlDocument);
+}
+
+function isClassifyMeBannerElement(element: Element): boolean {
+  /*
+   * Outlook on the web can return an id as x_classifyme-classification-banner.
+   * It can add the prefix again to quoted or forwarded HTML, so remove every leading
+   * x_ before comparing with the identifier written by ClassifyMe.
+   */
+  let normalizedId = element.id;
+
+  while (normalizedId.startsWith(OUTLOOK_WEB_HTML_ID_PREFIX)) {
+    normalizedId = normalizedId.slice(OUTLOOK_WEB_HTML_ID_PREFIX.length);
   }
 
-  const endOfMarker = endIndex + OUTLOOK_BANNER_END_MARKER.length;
+  return normalizedId === OUTLOOK_BANNER_ELEMENT_ID;
+}
 
-  return `${htmlBody.slice(0, startIndex)}${htmlBody.slice(endOfMarker)}`;
+function removeLegacyCommentBanners(htmlDocument: Document): void {
+  const comments: Comment[] = [];
+  const commentWalker = htmlDocument.createTreeWalker(htmlDocument, NodeFilter.SHOW_COMMENT);
+  let currentNode = commentWalker.nextNode();
+
+  while (currentNode) {
+    comments.push(currentNode as Comment);
+    currentNode = commentWalker.nextNode();
+  }
+
+  let startComment: Comment | undefined;
+  comments.forEach((comment) => {
+    if (isLegacyMarkerComment(comment, OUTLOOK_BANNER_START_MARKER)) {
+      startComment = comment;
+      return;
+    }
+
+    if (startComment && isLegacyMarkerComment(comment, OUTLOOK_BANNER_END_MARKER)) {
+      removeSiblingRange(startComment, comment);
+      startComment = undefined;
+    }
+  });
+}
+
+function isLegacyMarkerComment(comment: Comment, markerHtml: string): boolean {
+  return `<!-- ${comment.data.trim()} -->` === markerHtml;
+}
+
+function removeSiblingRange(startNode: ChildNode, endNode: ChildNode): void {
+  // The old generated markup placed both marker comments next to the banner in one parent.
+  // Do not attempt to remove a malformed range across parents: preserving user content wins.
+  if (!startNode.parentNode || startNode.parentNode !== endNode.parentNode) {
+    return;
+  }
+
+  let nodeToRemove: ChildNode | null = startNode;
+  while (nodeToRemove) {
+    const nextNode: ChildNode | null = nodeToRemove.nextSibling;
+    nodeToRemove.remove();
+
+    if (nodeToRemove === endNode) {
+      return;
+    }
+
+    nodeToRemove = nextNode;
+  }
+}
+
+function removeRecognizableLegacyBanners(htmlDocument: Document): void {
+  htmlDocument.querySelectorAll("div").forEach((element) => {
+    if (isRecognizableLegacyBanner(element)) {
+      element.remove();
+    }
+  });
+}
+
+function isRecognizableLegacyBanner(element: Element): boolean {
+  const style = element.getAttribute("style") || "";
+  const title = element.querySelector("strong, b")?.textContent || "";
+  const visibleText = normalizeHtmlText(element.textContent || "");
+
+  // This fallback is only for drafts produced by the pilot before the id existed. It requires
+  // the complete generated title, message and characteristic styling; the title alone is never
+  // used to identify a banner. Outlook Web can expand border: into border-width/style/color.
+  return (
+    hasLegacyBannerStyle(style) &&
+    CLASSIFICATION_LEVELS.some((level) => {
+      const expectedTitle = level.bannerTitle || `Classification: ${level.code}`;
+      const expectedText = normalizeHtmlText(`${expectedTitle} ${level.bannerText}`);
+
+      return (
+        normalizeHtmlText(title) === normalizeHtmlText(expectedTitle) &&
+        visibleText === expectedText
+      );
+    })
+  );
+}
+
+function hasLegacyBannerStyle(style: string): boolean {
+  return (
+    /(?:^|;)\s*border(?:-width)?\s*:/i.test(style) &&
+    /(?:^|;)\s*margin-bottom\s*:/i.test(style) &&
+    /(?:^|;)\s*padding\s*:/i.test(style)
+  );
+}
+
+function normalizeHtmlText(value: string): string {
+  return value.replace(/\s+/g, " ").trim();
 }
 
 async function applySubjectPrefix(

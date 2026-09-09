@@ -3,7 +3,7 @@
  * Host-specific Office.js behavior is delegated to the ClassifyMe Office router.
  */
 
-/* global document, Office */
+/* global document, Office, HTMLInputElement */
 
 import { CLASSIFICATION_LEVELS, ClassificationLevel } from "../../core/classificationConstants";
 import {

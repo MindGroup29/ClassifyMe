@@ -11,7 +11,7 @@ Le projet couvre actuellement :
 - Word : application d'un bandeau de classification dans l'en-tete du document ;
 - PowerPoint : application d'un footer de classification sur les slides existantes ;
 - Excel : application d'une shape de classification sur les feuilles existantes, avec un footer pour impression/PDF ;
-- Outlook : application d'un bandeau HTML en haut d'un email en cours de redaction ;
+- Outlook : application idempotente d'un bandeau HTML en haut d'un email en cours de redaction ;
 - un meme panneau lateral `ClassifyMe` pour choisir `PUBLIC`, `RESTREINT`, `CONFIDENTIEL` ou `SECRET` ;
 - une application directe de la classification lors du clic sur une carte ;
 - un affichage du niveau selectionne dans le panneau avec les couleurs du niveau choisi ;
@@ -144,6 +144,20 @@ npm run stop:outlook
 ```
 
 Selon le poste, Office ou le navigateur peut demander d'approuver un certificat de developpement local HTTPS.
+
+Pour tester en mode web (webmail et Nouvel Outlook) si le plugin n'est pas sideloadé par la commande `npm` (par défaut, le plugin EST sidelaodé):
+
+```text
+1. npm start
+2. vérifier https://localhost:3000
+3. ouvrir https://aka.ms/olksideload
+4. My add-ins
+5. Custom Add-ins
+6. Add from File
+7. choisir manifest.outlook.dev.xml
+8. ouvrir un nouveau mail dans OWA
+9. Apps > ClassifyMe DEV
+```
 
 ## Publication GitHub Pages et Microsoft 365
 
@@ -351,19 +365,36 @@ Pour une verification avant deploiement centralise :
 3. Creer un nouvel email.
 4. Ouvrir le panneau ClassifyMe depuis le ruban du message en composition.
 5. Verifier que l'option Ajouter un prefixe a l'objet du courriel est decochee.
-6. Cliquer sur Confidentiel.
-7. Verifier qu'un bandeau HTML ClassifyMe apparait en haut du corps du mail.
-8. Verifier que l'objet du mail n'a pas ete modifie.
-9. Cocher Ajouter un prefixe a l'objet du courriel.
-10. Cliquer de nouveau sur Confidentiel.
+6. Cliquer successivement sur Public, Restreint, Confidentiel puis Secret.
+7. Apres chaque clic, verifier qu'il reste exactement un bandeau ClassifyMe, avec le dernier niveau choisi.
+8. Verifier que le contenu, la signature et les citations eventuelles restent en place.
+9. Verifier que l'objet du mail n'a pas ete modifie.
+10. Cocher Ajouter un prefixe a l'objet du courriel puis cliquer sur Confidentiel.
 11. Verifier que l'objet contient [CONFIDENTIEL] sans doublon.
-12. Cliquer sur Secret.
-13. Verifier que le bandeau est remplace sans doublon.
-14. Verifier que le prefixe objet devient [SECRET] sans doublon.
-15. Decocher Ajouter un prefixe a l'objet du courriel.
-16. Cliquer de nouveau sur Secret.
-17. Verifier que le prefixe [SECRET] est retire de l'objet.
+12. Cliquer sur Secret et verifier que le prefixe devient [SECRET] sans doublon.
+13. Decocher Ajouter un prefixe a l'objet du courriel puis cliquer sur Secret.
+14. Verifier que le prefixe [SECRET] est retire de l'objet.
 ```
+
+### Matrice de validation Outlook
+
+Executer cette matrice dans Outlook Classic Windows, le nouvel Outlook pour Windows et Outlook sur le web. Le resultat attendu de chaque changement est : **exactement un bandeau ClassifyMe**.
+
+| Cas                         | Outlook Classic | Nouvel Outlook | Outlook sur le web |
+| --------------------------- | --------------- | -------------- | ------------------ |
+| Nouvelle classification     | a verifier      | a verifier     | a verifier         |
+| PUBLIC vers RESTREINT       | a verifier      | a verifier     | a verifier         |
+| RESTREINT vers CONFIDENTIEL | a verifier      | a verifier     | a verifier         |
+| CONFIDENTIEL vers SECRET    | a verifier      | a verifier     | a verifier         |
+| Changement repete 4 fois    | a verifier      | a verifier     | a verifier         |
+| Message avec signature      | a verifier      | a verifier     | a verifier         |
+| Reponse a un email existant | a verifier      | a verifier     | a verifier         |
+
+### Idempotence du bandeau Outlook
+
+Le premier pilote identifiait le bandeau uniquement avec les commentaires HTML `ClassifyMe:BannerStart` et `ClassifyMe:BannerEnd`. Outlook sur le web et le nouvel Outlook pour Windows peuvent reecrire le HTML du corps et ne conservent pas necessairement ces commentaires. Le code ne retrouvait alors plus le bandeau et en ajoutait un autre.
+
+Le bandeau courant porte desormais l'identifiant HTML `classifyme-classification-banner`. Outlook sur le web peut le reecrire en `x_classifyme-classification-banner` (et ajouter plusieurs prefixes `x_` dans du HTML cite) afin d'isoler le DOM du message. A chaque application, l'add-in normalise ces prefixes, supprime tous les bandeaux ClassifyMe trouves, nettoie les anciens bandeaux pilote encore reconnaissables, ajoute le nouveau bandeau une seule fois en tete puis remplace le corps HTML. Cette methode n'utilise pas `prependAsync()`.
 
 L'option Outlook de prefixe d'objet est volontairement desactivee par defaut. Quand elle est cochee, ClassifyMe ajoute ou remplace uniquement les prefixes connus `[PUBLIC]`, `[RESTREINT]`, `[RESTRAINT]`, `[CONFIDENTIEL]` et `[SECRET]`. Quand elle est decochee, ClassifyMe retire un prefixe connu existant sans modifier le reste de l'objet.
 
@@ -386,8 +417,8 @@ L'option Outlook de prefixe d'objet est volontairement desactivee par defaut. Qu
 - Dans Excel, les anciens bandeaux `ClassifyMeBanner` sont supprimes avant reapplication pour eviter les doublons.
 - Dans Excel, un footer de classification est applique a chaque feuille existante pour les impressions et exports PDF.
 - Dans Excel, les proprietes personnalisees `ClassificationLevel`, `ClassificationLabel`, `ClassificationUpdatedAt` et `ClassificationTool` sont mises a jour si l'API Excel les accepte dans l'environnement Office utilise.
-- Dans Outlook compose mode, un bandeau HTML identifie par les marqueurs `ClassifyMe:BannerStart` et `ClassifyMe:BannerEnd` est insere en haut du corps du mail.
-- Dans Outlook compose mode, un ancien bandeau ClassifyMe est remplace avant insertion pour eviter les doublons.
+- Dans Outlook compose mode, un bandeau HTML identifie par l'element `div#classifyme-classification-banner` est insere en haut du corps du mail ; les variantes d'identifiant prefixees par `x_` d'Outlook Web sont aussi reconnues.
+- Dans Outlook compose mode, tous les bandeaux ClassifyMe identifies sont supprimes avant l'insertion d'un seul nouveau bandeau ; les marqueurs du premier pilote sont nettoyes lorsqu'ils sont encore presents.
 - Dans Outlook compose mode, l'option de prefixe objet ajoute ou remplace le prefixe de classification si elle est cochee, et retire un prefixe connu si elle est decochee.
 - Dans Outlook compose mode, les proprietes personnalisees `ClassificationLevel`, `ClassificationLabel`, `ClassificationUpdatedAt` et `ClassificationTool` sont enregistrees si l'API Outlook et le compte courant l'acceptent.
 
@@ -411,6 +442,7 @@ L'option Outlook de prefixe d'objet est volontairement desactivee par defaut. Qu
 - Les proprietes personnalisees Outlook peuvent ne pas etre enregistrees selon le client, l'etat reseau ou le type de compte. Dans ce cas, le bandeau reste applique.
 - Les proprietes personnalisees Outlook enregistrees en mode composition ne sont pas transmises aux destinataires.
 - Le bandeau Outlook est applique au corps HTML courant du brouillon. Les emails au format texte brut peuvent refuser l'insertion HTML selon le client Outlook.
+- Outlook peut reecrire le HTML d'un brouillon entre la lecture et l'ecriture. Le bandeau ne depend donc pas de commentaires HTML ; la compatibilite pilote ne peut nettoyer un ancien bandeau que si ses commentaires ou sa structure complete restent reconnaissables.
 - Le prefixe d'objet Outlook n'est jamais conserve par ClassifyMe si l'option est decochee et si le prefixe existant fait partie des prefixes connus.
 - Le MVP ne classifie pas automatiquement les reponses ou les fils de conversation Outlook.
 - Le MVP ne lit pas et ne classe pas les emails recus.
@@ -427,7 +459,7 @@ L'option Outlook de prefixe d'objet est volontairement desactivee par defaut. Qu
 1. Verifier manuellement le comportement dans Word pour les quatre niveaux.
 2. Verifier manuellement le comportement dans PowerPoint sur une presentation de plusieurs slides.
 3. Verifier manuellement le comportement dans Excel sur un classeur de plusieurs feuilles.
-4. Verifier manuellement le comportement dans Outlook sur un nouvel email en mode composition.
+4. Verifier manuellement l'idempotence Outlook sur les trois clients cibles, y compris sur un message avec signature et une reponse existante.
 5. Confirmer si PowerPoint doit utiliser les masques de slides dans une prochaine version.
 6. Confirmer si Excel doit utiliser une zone reservee ou une position adaptee aux modeles internes.
 7. Ajouter la lecture des proprietes ou marquages existants a l'ouverture du panneau.

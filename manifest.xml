@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0" xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="TaskPaneApp">
-  <Id>a040cb4c-dd54-427c-976a-dcfbd6383e27</Id>
+  <Id>c0decafe-beef-face-acde-c0ffee000001</Id>
   <Version>1.0.0.0</Version>
   <ProviderName>ClassifyMe</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
-  <DisplayName DefaultValue="ClassifyMe"/>
-  <Description DefaultValue="Manual document, presentation and workbook classification MVP for Word, PowerPoint and Excel."/>
+  <DisplayName DefaultValue="ClassifyMe DEV"/>
+  <Description DefaultValue="ClassifyMe DEV - Development version."/>
   <IconUrl DefaultValue="https://localhost:3000/assets/icon-32.png"/>
   <HighResolutionIconUrl DefaultValue="https://localhost:3000/assets/icon-64.png"/>
   <SupportUrl DefaultValue="https://www.contoso.com/help"/>
@@ -150,13 +150,13 @@
         <bt:Url id="Taskpane.Url" DefaultValue="https://localhost:3000/taskpane.html"/>
       </bt:Urls>
       <bt:ShortStrings>
-        <bt:String id="GetStarted.Title" DefaultValue="ClassifyMe is ready"/>
-        <bt:String id="CommandsGroup.Label" DefaultValue="ClassifyMe"/>
+        <bt:String id="GetStarted.Title" DefaultValue="ClassifyMe DEV is ready"/>
+        <bt:String id="CommandsGroup.Label" DefaultValue="ClassifyMe DEV"/>
         <bt:String id="TaskpaneButton.Label" DefaultValue="Classify file"/>
       </bt:ShortStrings>
       <bt:LongStrings>
-        <bt:String id="GetStarted.Description" DefaultValue="Open the ClassifyMe task pane to choose and apply a classification."/>
-        <bt:String id="TaskpaneButton.Tooltip" DefaultValue="Open ClassifyMe"/>
+        <bt:String id="GetStarted.Description" DefaultValue="Open the ClassifyMe DEV task pane to choose and apply a classification."/>
+        <bt:String id="TaskpaneButton.Tooltip" DefaultValue="Open ClassifyMe DEV"/>
       </bt:LongStrings>
     </Resources>
   </VersionOverrides>
