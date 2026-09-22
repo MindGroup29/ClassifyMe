@@ -154,7 +154,7 @@ Pour tester en mode web (webmail et Nouvel Outlook) si le plugin n'est pas sidel
 4. My add-ins
 5. Custom Add-ins
 6. Add from File
-7. choisir manifest.outlook.dev.xml
+7. choisir manifest.outlook.xml
 8. ouvrir un nouveau mail dans OWA
 9. Apps > ClassifyMe DEV
 ```
@@ -376,6 +376,195 @@ Pour une verification avant deploiement centralise :
 14. Verifier que le prefixe [SECRET] est retire de l'objet.
 ```
 
+## Spike — Ouverture automatique Outlook
+
+Le débrief détaillé est disponible dans
+[`RAPPORT-SPIKE-AUTOOPEN-OUTLOOK.md`](RAPPORT-SPIKE-AUTOOPEN-OUTLOOK.md).
+
+### Conclusion de faisabilite documentaire
+
+Le manifeste DEV `manifest.outlook.xml` declare maintenant `OnNewMessageCompose` et
+`OnNewAppointmentOrganizer` dans un `VersionOverridesV1_1` avec le requirement set
+`Mailbox 1.10`. Ces evenements sont pris en charge dans Outlook Classic Windows, le
+nouvel Outlook Windows et Outlook sur le web. `OnNewMessageCompose` couvre aussi les
+reponses, reponses a tous et transferts, mais pas la reouverture d'un brouillon.
+
+L'ouverture entierement automatique demandee n'est toutefois pas une combinaison
+officiellement supportee : `Office.addin.showAsTaskpane()` exige `SharedRuntime 1.1`,
+et Microsoft indique que les runtimes partages ne sont pas pris en charge dans Outlook.
+Le handler du spike n'appelle donc pas cette API. Il utilise le repli montre par
+l'echantillon officiel Microsoft : une notification non bloquante propose l'action
+**Ouvrir ClassifyMe**, qui ouvre le task pane existant apres un clic. Le bouton historique
+du ruban reste disponible.
+
+Cette conclusion signifie que le critere « aucune interaction utilisateur prealable »
+est attendu en echec sur les trois clients. Les tests restent utiles pour confirmer le
+declenchement des evenements et la fiabilite du repli supporte.
+
+Documentation Microsoft consultee :
+
+- [Activation basee sur les evenements](https://learn.microsoft.com/office/dev/add-ins/develop/event-based-activation)
+- [Evenements de nouvelle composition Outlook](https://learn.microsoft.com/office/dev/add-ins/outlook/on-new-compose-events-walkthrough)
+- [Afficher ou masquer un task pane](https://learn.microsoft.com/office/dev/add-ins/develop/show-hide-add-in)
+- [Runtimes Office Add-ins](https://learn.microsoft.com/office/dev/add-ins/testing/runtimes)
+- [Exemple officiel de signature Outlook](https://learn.microsoft.com/samples/officedev/office-add-in-samples/outlook-add-in-set-signature/)
+- [Deboguer l'activation evenementielle](https://learn.microsoft.com/office/dev/add-ins/testing/debug-autolaunch)
+
+### Lancer le spike
+
+```text
+1. Installer les dependances avec npm install si necessaire.
+2. Executer npm run build:dev.
+3. Executer npm run validate:outlook.
+4. Executer npm run start:outlook pour demarrer le serveur HTTPS et sideloader manifest.outlook.xml.
+5. Si Outlook etait deja ouvert ou si une ancienne version du manifeste est en cache,
+   supprimer l'add-in, redemarrer Outlook puis le sideloader de nouveau.
+6. Pour Outlook sur le web ou le nouvel Outlook, ouvrir les outils de developpement du
+   navigateur ; pour le nouvel Outlook Windows, utiliser olk.exe --devtools.
+7. Pour Outlook Classic Windows, suivre la procedure Microsoft de debogage direct du
+   runtime evenementiel et inspecter bundle.js sur le port 9223.
+8. Executer chaque scenario de la matrice ci-dessous dans les trois clients.
+9. Rechercher dans la console le prefixe [ClassifyMe][Spike AutoOpen].
+10. Arreter le spike avec npm run stop:outlook.
+```
+
+Le sideload est adapte aux essais de developpement. Pour une validation pilote proche
+du deploiement reel, publier les ressources sur une URL HTTPS accessible puis deployer
+le manifeste DEV a un groupe pilote depuis Microsoft 365 Admin Center. Ne pas utiliser
+`manifest.outlook.production.xml` pour ce spike. Les mises a jour d'un manifeste
+event-based deja deploye par un administrateur demandent un nouveau consentement admin.
+
+### Resultats a consigner
+
+| Scénario                                  | Classic  | New Outlook | Web      |
+| ----------------------------------------- | -------- | ----------- | -------- |
+| Nouveau mail                              | Repli fonctionnel | À tester    | Repli fonctionnel |
+| Réponse à un mail                         | À confirmer | À tester    | À tester |
+| Transfert d'un mail                       | À confirmer | À tester    | À tester |
+| Nouvelle réunion                          | À confirmer | À tester    | À tester |
+| Ouverture manuelle toujours fonctionnelle | Fonctionnelle | À tester    | À confirmer |
+
+Premier passage Outlook Classic du 22 septembre 2026 : aucune notification,
+aucune ouverture de panneau et aucun log observé. Ce résultat ne prouve pas encore
+que le handler ne s'est pas exécuté, car le runtime événementiel Classic est distinct
+du task pane et ses `console.log` ne sont pas affichés dans la console du task pane.
+L'inspection locale confirme que le manifeste contenant les deux `LaunchEvent` et le
+bundle JavaScript contenant les deux appels `Office.actions.associate` ont bien été
+mis en cache par Outlook.
+
+### Second passage de diagnostic — Outlook Classic
+
+Avant de rejouer la matrice Classic :
+
+```text
+1. La boîte testée a été confirmée sur Exchange Online. Exchange on-premises est donc
+   écarté comme cause de l'échec observé.
+2. Fermer complètement Outlook, y compris tous les processus OUTLOOK.EXE.
+3. Dans un terminal du projet, activer le journal de chargement Office :
+   npx office-addin-dev-settings runtime-log --enable .\outlook-runtime.log
+4. Relancer npm run start:outlook et laisser le serveur HTTPS actif pendant tout le test.
+5. Vérifier que https://localhost:3000/autoopen.js répond avant de créer un message.
+6. Suivre la procédure Microsoft « Debug event-based add-ins » : attacher le debugger
+   direct au port 9223, puis placer un breakpoint dans le bundle.js mis en cache.
+7. Créer un nouveau message depuis le bouton Nouveau courrier, sans ouvrir un brouillon.
+8. Vérifier successivement : breakpoint du handler, notification de diagnostic/action,
+   puis appel à event.completed().
+9. Refaire le test avec une nouvelle réunion créée par l'organisateur.
+10. Après le diagnostic, désactiver le journal :
+    npx office-addin-dev-settings runtime-log --disable
+```
+
+Le journal `outlook-runtime.log` fournit les erreurs de chargement du manifeste et du
+runtime, mais pas les sorties JavaScript `console.log`. Celles-ci nécessitent le debugger
+direct. Le poste inspecté utilise Outlook Classic x64 `16.0.17932.20910`, supérieur au
+minimum Mailbox 1.10 (`16.0.13929.20296`). Le client est donc assez récent ; le type de
+serveur Exchange est compatible. L'exécution effective du runtime reste à confirmer.
+
+Le second build du spike utilisait la version DEV `1.0.0.1` pour forcer le rafraichissement
+du manifeste. Si l'`InsightMessage` avec l'action **Ouvrir ClassifyMe** échoue après le
+déclenchement du handler, le code tente désormais une notification informative minimale :
+« Le handler ClassifyMe s'est déclenché, mais l'action d'ouverture a échoué. » L'absence
+des deux notifications indique que l'événement ou le runtime n'a pas été exécuté.
+
+Le contrôle du bundle réellement mis en cache après ce second passage a identifié une
+cause technique : `webpack-dev-server` injectait son client WebSocket et le hot module
+replacement dans `autoopen.js`. Outlook Classic exécutait ces modules navigateur avant
+le module du spike dans son runtime JavaScript-only. L'enregistrement des handlers pouvait
+donc être interrompu avant les appels `Office.actions.associate()`.
+
+Le troisième build utilise la version DEV `1.0.0.2` et désactive `client`, `hot` et
+`liveReload` dans `webpack-dev-server`. Le bundle événementiel servi doit désormais être
+autonome, sans référence à `webpack-dev-server`, `WebSocketClient` ou `hot/dev-server`.
+Cette désactivation s'applique uniquement au confort de rechargement du serveur DEV : elle
+ne change ni le task pane, ni la classification, ni les builds de production.
+
+Le passage suivant confirme que le repli fonctionne dans Outlook Classic. Dans Outlook
+sur le web, aucune notification n'a en revanche été observée. Classic charge directement
+`autoopen.js`, tandis que Web charge `autoopen.html`. Le HTML généré chargeait le bundle
+avec `defer`, ce qui pouvait retarder `Office.actions.associate()` dans le runtime court.
+La version DEV `1.0.0.3` impose maintenant un chargement bloquant du bundle `autoopen.js`.
+
+Pour retester Web, supprimer d'abord ClassifyMe DEV de **Mes compléments**, puis ajouter
+de nouveau `manifest.outlook.xml` afin d'éviter le cache du manifeste `1.0.0.2`. Garder
+`npm run start:outlook` actif, ouvrir directement `https://localhost:3000/autoopen.html`
+dans le même navigateur pour confirmer le certificat, puis créer un message neuf depuis
+la surface de composition standard d'Outlook sur le web.
+
+Lors du passage suivant, `autoopen.html` et `autoopen.js` apparaissent bien dans les
+échanges réseau Web, mais aucune notification n'est affichée. La version DEV `1.0.0.4`
+ajoute donc un paramètre de cache explicite aux deux ressources et les traces suivantes
+dès le chargement, avant tout déclenchement d'événement :
+
+Webpack ajoute également un hash de compilation à l'URL de `autoopen.js` générée dans
+`autoopen.html`, afin qu'Outlook Web ne réutilise pas un ancien bundle JavaScript.
+
+```text
+[ClassifyMe][Spike AutoOpen] runtime chargé
+[ClassifyMe][Spike AutoOpen] handlers associés
+```
+
+Si ces deux lignes apparaissent sans la ligne `OnNewMessageCompose déclenché`, Outlook Web
+charge correctement le runtime mais ne distribue pas l'événement. Si la ligne de
+déclenchement apparaît, les logs suivants permettent d'identifier l'échec de
+`notificationMessages.addAsync`.
+
+Le test Web suivant a confirmé le chargement du runtime et l'association des handlers,
+mais Office.js signalait ensuite que l'add-in n'avait appelé ni `Office.onReady()` ni
+`Office.initialize`. La version DEV `1.0.0.5` définit donc `Office.initialize` dans
+`autoopen.html`, avant le chargement du bundle. Cette initialisation est propre au runtime
+Web ; les appels `Office.actions.associate` restent exécutés immédiatement dans
+`autoopen.js`, comme l'exige l'activation événementielle. La console doit maintenant aussi
+afficher :
+
+```text
+[ClassifyMe][Spike AutoOpen] Office.initialize exécuté (Web)
+```
+
+Le test final de la version DEV `1.0.0.5` confirme que cette initialisation corrige le
+problème : la notification avec l'action **Ouvrir ClassifyMe** est désormais fonctionnelle
+dans Outlook Web lors de la création d'un nouveau message.
+
+Pour chaque test, verifier et consigner :
+
+1. si le panneau ClassifyMe s'ouvre automatiquement — attendu : non, API non supportee dans Outlook ;
+2. s'il ne s'ouvre qu'une fois ;
+3. si une interaction utilisateur prealable est necessaire — attendu : oui, clic sur la notification ;
+4. si les logs montrent le declenchement de l'evenement, le demarrage du handler, l'absence motivee d'appel a `showAsTaskpane()`, le resultat de la notification et l'execution de `event.completed()` ;
+5. si l'action **Ouvrir ClassifyMe** et le bouton manuel ouvrent toujours le task pane existant.
+
+Sur Outlook Web et le nouvel Outlook, tester uniquement les surfaces standard de
+composition. Microsoft signale que certaines surfaces non standard, notamment une
+reponse a une invitation avec note ou le transfert d'une reunion depuis le calendrier,
+peuvent ne pas declencher l'activation evenementielle.
+
+### Elements temporaires du spike
+
+Si le spike est abandonne, supprimer `src/hosts/outlook/outlookLaunchEvents.ts` et
+`src/hosts/outlook/outlookLaunchEvents.html`, retirer l'entree et le plugin Webpack
+`autoopen`, puis retirer le `VersionOverridesV1_1` imbrique de `manifest.outlook.xml`.
+Le manifeste de production et la logique de classification ne contiennent aucun
+changement lie au spike.
+
 ### Matrice de validation Outlook
 
 Executer cette matrice dans Outlook Classic Windows, le nouvel Outlook pour Windows et Outlook sur le web. Le resultat attendu de chaque changement est : **exactement un bandeau ClassifyMe**.
@@ -437,6 +626,7 @@ L'option Outlook de prefixe d'objet est volontairement desactivee par defaut. Qu
 - Dans Outlook compose mode, l'option de prefixe objet ajoute ou remplace le prefixe de classification si elle est cochee. Si elle est décochée, elle ne modifie pas l'objet de la réunion ; le retrait d'un préfixe connu reste conservé pour les emails afin de ne pas changer leur comportement existant.
 - Dans Outlook compose mode, les proprietes personnalisees `ClassificationLevel`, `ClassificationLabel`, `ClassificationUpdatedAt` et `ClassificationTool` sont tentées pour les emails et les réunions organisées. Le bandeau visible reste appliqué si leur enregistrement échoue.
 - Les manifestes Outlook de développement et de production déclarent une surface de commande `AppointmentOrganizerCommandSurface`, en plus de la surface email existante. La version du manifeste de production est `1.0.0.2`.
+- Le manifeste Outlook DEV active le spike temporaire `spike-autoopen` sur les nouvelles compositions Mailbox 1.10 et affiche une notification permettant d'ouvrir ClassifyMe.
 
 ## Limites connues du MVP
 
@@ -461,6 +651,9 @@ L'option Outlook de prefixe d'objet est volontairement desactivee par defaut. Qu
 - Outlook peut reecrire le HTML d'un brouillon entre la lecture et l'ecriture. Le bandeau ne depend donc pas de commentaires HTML ; la compatibilite pilote ne peut nettoyer un ancien bandeau que si ses commentaires ou sa structure complete restent reconnaissables.
 - Le prefixe d'objet Outlook n'est jamais conserve par ClassifyMe si l'option est decochee et si le prefixe existant fait partie des prefixes connus.
 - Le MVP ne classifie pas automatiquement les reponses, les fils de conversation Outlook ou les réponses à des invitations.
+- Le spike Outlook ne peut pas ouvrir automatiquement le task pane sans interaction : `Office.addin.showAsTaskpane()` requiert un runtime partage, non pris en charge dans Outlook. Le repli par notification exige un clic utilisateur.
+- L'activation evenementielle necessite une connexion et s'arrete lorsque l'utilisateur quitte l'element ; un handler Outlook expire aussi apres environ cinq minutes s'il n'appelle pas `event.completed()`.
+- Outlook Web et le nouvel Outlook ne garantissent pas l'activation evenementielle sur les surfaces de composition non standard.
 - Le MVP ne lit pas et ne classe pas les emails reçus ou les invitations reçues.
 - Le fichier n'est pas chiffre.
 - L'add-in ne bloque pas l'enregistrement, l'envoi, le partage, la copie, l'impression ou le transfert.
@@ -476,9 +669,10 @@ L'option Outlook de prefixe d'objet est volontairement desactivee par defaut. Qu
 2. Verifier manuellement le comportement dans PowerPoint sur une presentation de plusieurs slides.
 3. Verifier manuellement le comportement dans Excel sur un classeur de plusieurs feuilles.
 4. Verifier manuellement l'idempotence Outlook sur les trois clients cibles, pour les emails (y compris une signature et une réponse existante) et les réunions organisées.
-5. Confirmer si PowerPoint doit utiliser les masques de slides dans une prochaine version.
-6. Confirmer si Excel doit utiliser une zone reservee ou une position adaptee aux modeles internes.
-7. Ajouter la lecture des proprietes ou marquages existants a l'ouverture du panneau.
+5. Terminer la matrice du spike sur New Outlook, les reponses, les transferts et les reunions, puis confirmer que le repli par notification est acceptable malgre l'absence d'ouverture entierement automatique.
+6. Confirmer si PowerPoint doit utiliser les masques de slides dans une prochaine version.
+7. Confirmer si Excel doit utiliser une zone reservee ou une position adaptee aux modeles internes.
+8. Ajouter la lecture des proprietes ou marquages existants a l'ouverture du panneau.
 
 ## Hors perimetre
 

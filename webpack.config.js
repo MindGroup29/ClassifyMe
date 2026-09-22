@@ -36,6 +36,7 @@ module.exports = async (env, options) => {
       polyfill: ["core-js/stable", "regenerator-runtime/runtime"],
       taskpane: ["./src/ui/taskpane/taskpane.ts", "./src/ui/taskpane/taskpane.html"],
       commands: "./src/commands/commands.ts",
+      autoopen: "./src/hosts/outlook/outlookLaunchEvents.ts",
     },
     output: {
       path: path.resolve(__dirname, outputDirectory),
@@ -101,8 +102,25 @@ module.exports = async (env, options) => {
         template: "./src/commands/commands.html",
         chunks: ["polyfill", "commands"],
       }),
+      new HtmlWebpackPlugin({
+        filename: "autoopen.html",
+        template: "./src/hosts/outlook/outlookLaunchEvents.html",
+        chunks: ["autoopen"],
+        // Le runtime web doit enregistrer les handlers avant de pouvoir recevoir les événements.
+        scriptLoading: "blocking",
+        // Le hash évite qu'Outlook Web réutilise un ancien bundle pendant le diagnostic.
+        hash: true,
+      }),
     ],
     devServer: {
+      /*
+       * Outlook Classic charge autoopen.js dans un runtime JavaScript-only.
+       * Le client HMR de webpack-dev-server utilise des API de navigateur et était
+       * exécuté avant les handlers, ce qui empêchait leur enregistrement.
+       */
+      client: false,
+      hot: false,
+      liveReload: false,
       headers: {
         "Access-Control-Allow-Origin": "*",
       },
