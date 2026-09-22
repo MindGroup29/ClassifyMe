@@ -1,39 +1,37 @@
 # ClassifyMe
 
-ClassifyMe est un MVP d'Office Add-in pour Microsoft Word, Microsoft PowerPoint, Microsoft Excel et Outlook en mode composition. Il permet a un utilisateur de choisir manuellement un niveau de classification, d'ajouter un marquage visible et de garder l'interface volontairement simple.
+ClassifyMe est un MVP d'Office Add-in pour Word, PowerPoint, Excel et Outlook en mode
+composition. Il permet à l'utilisateur de choisir manuellement un niveau `PUBLIC`,
+`RESTREINT`, `CONFIDENTIEL` ou `SECRET`, d'appliquer un marquage visible et de stocker des
+métadonnées limitées.
 
-Le MVP ne chiffre pas les fichiers ou emails, ne bloque pas l'enregistrement ou l'envoi, n'analyse pas le contenu et ne remplace pas Microsoft Purview.
+Le MVP ne chiffre pas les fichiers ou les e-mails, ne bloque pas l'enregistrement ou
+l'envoi, n'analyse pas le contenu et ne remplace pas Microsoft Purview.
 
 ## Objectif actuel
 
 Le projet couvre actuellement :
 
-- Word : application d'un bandeau de classification dans l'en-tete du document ;
-- PowerPoint : application d'un footer de classification sur les slides existantes ;
-- Excel : application d'une shape de classification sur les feuilles existantes, avec un footer pour impression/PDF ;
-- Outlook : application idempotente d'un bandeau HTML en haut d'un email ou d'une réunion dont l'utilisateur est l'organisateur, en mode composition ;
-- un meme panneau lateral `ClassifyMe` pour choisir `PUBLIC`, `RESTREINT`, `CONFIDENTIEL` ou `SECRET` ;
-- une application directe de la classification lors du clic sur une carte ;
-- un affichage du niveau selectionne dans le panneau avec les couleurs du niveau choisi ;
-- une option Outlook, desactivee par defaut, pour ajouter un prefixe de classification a l'objet du courriel ou de la réunion.
+- Word : bandeau de classification dans l'en-tête du document ;
+- PowerPoint : pied de page de classification sur les diapositives existantes ;
+- Excel : forme de classification sur les feuilles existantes et pied de page pour
+  impression/PDF ;
+- Outlook : bandeau HTML idempotent dans un e-mail ou une réunion organisée, en mode
+  composition ;
+- Outlook : rappel automatique non bloquant au début d'une composition ;
+- un panneau latéral commun permettant de choisir et de modifier le niveau ;
+- une option Outlook, désactivée par défaut, permettant d'ajouter un préfixe de
+  classification à l'objet.
 
 ## Cadre technique
 
-Le projet est base sur le template Yeoman officiel pour les Office Add-ins :
-
-- Office Add-in Task Pane ;
-- Office.js ;
-- TypeScript ;
-- cibles Word, PowerPoint, Excel et Outlook compose mode ;
-- execution locale via Node.js et npm ;
-- aucun backend ;
-- aucune base de donnees ;
-- aucune API Graph ;
-- aucune authentification.
+- Office Add-in généré avec Yeoman ;
+- Office.js et TypeScript ;
+- interface HTML/CSS simple ;
+- exécution locale avec Node.js et npm ;
+- aucun backend, base de données, Microsoft Graph ou mécanisme d'authentification.
 
 ## Organisation du code
-
-Le code est separe pour garder un produit unique `ClassifyMe` tout en distinguant les usages Office et Outlook :
 
 ```text
 src/
@@ -47,6 +45,8 @@ src/
       officeRouter.ts
     outlook/
       outlookClassification.ts
+      outlookClassificationReminder.ts
+      outlookClassificationReminder.html
   ui/
     taskpane/
       taskpane.ts
@@ -54,639 +54,238 @@ src/
       taskpane.css
 ```
 
-- `core/` contient les niveaux, textes, couleurs, noms de shapes et noms de metadonnees communs.
-- `hosts/office/` contient les implementations Word, Excel et PowerPoint, plus le routeur qui choisit la bonne implementation selon l'hote actif.
-- `hosts/outlook/` contient l'implementation Outlook en mode composition.
-- `ui/taskpane/` contient l'interface du panneau lateral et ne porte pas la logique specifique Word, Excel, PowerPoint ou Outlook.
+`manifest.xml` cible Word, Excel et PowerPoint. `manifest.outlook.xml` cible Outlook en
+développement. Les variantes `manifest.office.production.xml` et
+`manifest.outlook.production.xml` utilisent les ressources HTTPS de production.
 
-## Manifestes
+## Installation et commandes utiles
 
-Le projet utilise deux manifestes pour eviter de fragiliser les cibles deja fonctionnelles :
-
-- `manifest.xml` pour Word, Excel et PowerPoint ;
-- `manifest.outlook.xml` pour Outlook en mode composition (emails et réunions organisées).
-
-## Installation
-
-Installer les dependances depuis le dossier du projet :
+Installer les dépendances :
 
 ```powershell
 npm install
 ```
 
-## Commandes utiles
-
-Compiler en mode developpement :
+Compiler et contrôler le projet :
 
 ```powershell
 npm run build:dev
-```
-
-Valider le manifeste Office :
-
-```powershell
+npm run build
+npm run lint
 npm run validate
-```
-
-Valider le manifeste Outlook :
-
-```powershell
 npm run validate:outlook
-```
-
-Valider les manifestes production :
-
-```powershell
 npm run validate:office:production
 npm run validate:outlook:production
 ```
 
-Lancer l'add-in localement :
+Lancer ou arrêter les compléments locaux :
 
 ```powershell
 npm start
-```
-
-Lancer explicitement dans Word :
-
-```powershell
 npm run start:word
-```
-
-Lancer explicitement dans PowerPoint :
-
-```powershell
 npm run start:powerpoint
-```
-
-Lancer explicitement dans Excel :
-
-```powershell
 npm run start:excel
-```
-
-Lancer explicitement dans Outlook :
-
-```powershell
 npm run start:outlook
-```
-
-Arreter le serveur local et le debug Office :
-
-```powershell
 npm stop
-```
-
-Arreter le debug Outlook :
-
-```powershell
 npm run stop:outlook
 ```
 
-Selon le poste, Office ou le navigateur peut demander d'approuver un certificat de developpement local HTTPS.
+Le poste peut demander l'approbation du certificat HTTPS de développement local.
 
-Pour tester en mode web (webmail et Nouvel Outlook) si le plugin n'est pas sideloadé par la commande `npm` (par défaut, le plugin EST sidelaodé):
+## Rappel de classification Outlook
 
-```text
-1. npm start
-2. vérifier https://localhost:3000
-3. ouvrir https://aka.ms/olksideload
-4. My add-ins
-5. Custom Add-ins
-6. Add from File
-7. choisir manifest.outlook.xml
-8. ouvrir un nouveau mail dans OWA
-9. Apps > ClassifyMe DEV
-```
+Lorsqu'une composition Outlook commence, ClassifyMe affiche automatiquement une
+notification de rappel. Le mécanisme utilise :
+
+- `OnNewMessageCompose` pour les nouveaux messages, réponses, réponses à tous et
+  transferts ;
+- `OnNewAppointmentOrganizer` pour les nouvelles réunions et nouveaux rendez-vous
+  organisés ;
+- un `InsightMessage` avec l'action `Ouvrir ClassifyMe` ;
+- `Office.actions.associate()` et un appel garanti à `event.completed()`.
+
+Le rappel distingue le message de la réunion et ne choisit aucun niveau. Il ne modifie ni
+le contenu, ni l'objet, ni les métadonnées et ne bloque aucune action. Un clic sur
+`Ouvrir ClassifyMe` ouvre le panneau existant ; le bouton manuel du ruban reste disponible.
+
+La clé `classifyme-reminder` est stable et respecte la limite Outlook de 32 caractères :
+un nouvel ajout remplace le rappel portant la même clé au lieu d'afficher plusieurs
+notifications identiques.
+
+L'ouverture entièrement automatique du panneau n'est pas utilisée :
+`Office.addin.showAsTaskpane()` exige un runtime partagé, non pris en charge par Outlook.
+Le rapport [RAPPORT-SPIKE-AUTOOPEN-OUTLOOK.md](RAPPORT-SPIKE-AUTOOPEN-OUTLOOK.md) conserve
+l'historique de cette décision et des diagnostics ayant conduit à l'implémentation.
+
+### Runtime événementiel
+
+Webpack produit deux compilateurs cohérents dans le même dossier de sortie :
+
+- le compilateur de l'application génère le task pane et les commandes avec le
+  comportement standard de `webpack-dev-server` en développement ;
+- le compilateur `outlook-classification-reminder` génère un petit bundle autonome ; en
+  mode DEV, il est précompilé sur disque puis servi comme ressource statique avec
+  `devServer: false`, ce qui l'exclut de l'injection du client WebSocket et du HMR.
+
+Outlook Classic charge directement le fichier JavaScript. Outlook Web et le nouvel
+Outlook chargent la page HTML, qui initialise Office.js avec `Office.initialize` avant le
+bundle. Le script est chargé de manière bloquante afin d'associer les handlers assez tôt.
+Le hash du bundle et la version des URL du manifeste limitent la réutilisation de
+ressources obsolètes par le cache Outlook.
+
+### Compatibilité validée pendant le spike
+
+| Scénario | Outlook Classic | Web / New Outlook |
+| --- | ---: | ---: |
+| Nouveau message | OK | OK |
+| Réponse | OK | OK |
+| Répondre à tous | OK | OK |
+| Transfert | OK | OK |
+| Nouvelle réunion | OK | OK |
+| Ouverture manuelle | OK | OK |
+
+Cette matrice décrit les validations fonctionnelles réalisées avant l'industrialisation.
+Le protocole ci-dessous doit être rejoué après déploiement ou sideload de la nouvelle
+version ; un build réussi ne remplace pas ce contrôle humain.
+
+### Validation manuelle après industrialisation
+
+Dans Outlook Classic, puis dans Outlook Web ou le nouvel Outlook, tester successivement :
+
+1. un nouveau message ;
+2. une réponse ;
+3. une réponse à tous ;
+4. un transfert ;
+5. une nouvelle réunion organisée ;
+6. le bouton manuel ClassifyMe.
+
+Pour chaque scénario, vérifier :
+
+1. l'apparition d'un seul rappel ;
+2. le texte français adapté au message ou à la réunion ;
+3. l'ouverture du panneau après le clic sur `Ouvrir ClassifyMe` ;
+4. le fonctionnement normal de la classification ;
+5. l'absence de modification automatique du contenu et de l'objet ;
+6. l'absence de blocage d'Outlook et de l'envoi.
+
+## Validation manuelle de la classification
+
+### Word
+
+1. Lancer `npm run start:word` et ouvrir le panneau ClassifyMe.
+2. Cliquer sur chaque niveau et vérifier le niveau affiché dans le panneau.
+3. Vérifier que le bandeau de l'en-tête est créé puis remplacé sans doublon.
+
+### PowerPoint
+
+1. Lancer `npm run start:powerpoint` avec une présentation de plusieurs diapositives.
+2. Appliquer deux niveaux successifs.
+3. Vérifier que chaque diapositive existante contient un seul pied de page à jour.
+4. Ajouter une diapositive et vérifier qu'elle n'est pas marquée automatiquement.
+
+### Excel
+
+1. Lancer `npm run start:excel` avec un classeur de plusieurs feuilles.
+2. Appliquer deux niveaux successifs.
+3. Vérifier qu'une seule forme `ClassifyMeBanner` à jour est visible par feuille.
+4. Vérifier le pied de page dans l'aperçu avant impression ou dans un export PDF.
+5. Ajouter une feuille et vérifier qu'elle n'est pas marquée automatiquement.
+
+### Outlook
+
+1. Lancer `npm run start:outlook` et composer un e-mail ou une réunion organisée.
+2. Ouvrir ClassifyMe depuis le rappel ou depuis le bouton manuel.
+3. Appliquer successivement plusieurs niveaux et vérifier qu'un seul bandeau reste présent.
+4. Vérifier que la signature, les citations et le contenu existant sont conservés.
+5. Activer l'option de préfixe, appliquer deux niveaux et vérifier que le préfixe est
+   remplacé sans doublon.
+6. Désactiver l'option et vérifier le comportement documenté pour l'e-mail et la réunion.
 
 ## Publication GitHub Pages et Microsoft 365
 
-Cette section prepare une publication statique sur GitHub Pages. Elle ne publie rien automatiquement et ne remplace pas une validation fonctionnelle dans Office.
-
-### Prerequis
-
-- Un depot GitHub qui contient ce projet.
-- GitHub Pages active sur le depot.
-- Une URL GitHub Pages au format suivant :
+Les manifestes de production publiés utilisent l'URL ClassifyMe existante :
 
 ```text
-https://<org>.github.io/<repo>/
+https://MindGroup29.github.io/ClassifyMe/
 ```
 
-- Un compte administrateur Microsoft 365 autorise a charger des add-ins integres dans Microsoft 365 Admin Center.
-- Un groupe pilote Microsoft 365 dedie au deploiement initial.
-
-### URL de production a modifier
-
-Les manifestes production utilisent volontairement une URL generique :
-
-```text
-https://your-org.github.io/your-repo/
-```
-
-Avant publication, remplacer cette valeur par l'URL GitHub Pages reelle, ou definir la variable d'environnement `CLASSIFYME_PRODUCTION_BASE_URL` avant le build GitHub Pages :
+Pour publier sur une autre URL, définir explicitement :
 
 ```powershell
 $env:CLASSIFYME_PRODUCTION_BASE_URL="https://<org>.github.io/<repo>/"
 npm run build:github-pages
 ```
 
-La commande accepte aussi une valeur Webpack explicite :
-
-```powershell
-npm run build:github-pages -- --env productionUrl=https://<org>.github.io/<repo>/
-```
-
-### Commandes de build
-
-La commande de build production standard du projet est :
-
-```powershell
-npm run build
-```
-
-Elle genere le dossier statique `dist`.
-
-Pour GitHub Pages, utiliser :
-
-```powershell
-npm run build:github-pages
-```
-
-Cette commande genere le dossier statique `docs`, compatible avec l'option GitHub Pages "Deploy from a branch" puis dossier `/docs`.
-
-### Structure GitHub Pages attendue
-
-Apres `npm run build:github-pages`, le dossier `docs` doit contenir notamment :
+La commande génère le dossier `docs`, qui doit notamment contenir :
 
 ```text
 docs/
   assets/
-    icon-16.png
-    icon-32.png
-    icon-80.png
   commands.html
   taskpane.html
+  outlook-classification-reminder.html
+  outlook-classification-reminder.js
   manifest.office.production.xml
   manifest.outlook.production.xml
 ```
 
-Les fichiers JavaScript et CSS generes par Webpack sont egalement presents dans `docs`.
-
-### Manifestes production
-
-Les manifestes de production a utiliser pour Microsoft 365 sont :
-
-- `manifest.office.production.xml` pour Word, Excel et PowerPoint ;
-- `manifest.outlook.production.xml` pour Outlook en mode composition.
-
-Ces fichiers doivent pointer vers l'URL GitHub Pages de production. Ils ne doivent contenir aucune URL `localhost`.
-
-Valider les manifestes avant publication :
-
-```powershell
-npm run validate:office:production
-npm run validate:outlook:production
-```
-
-### Configuration GitHub Pages
-
-1. Executer le build GitHub Pages avec l'URL de production correcte.
-2. Committer le dossier `docs` genere.
-3. Dans GitHub, ouvrir les parametres du depot.
-4. Aller dans Pages.
-5. Choisir la source "Deploy from a branch".
-6. Choisir la branche de publication.
-7. Choisir le dossier `/docs`.
-8. Attendre la publication GitHub Pages.
-9. Verifier en HTTPS :
-   - `https://<org>.github.io/<repo>/taskpane.html`
-   - `https://<org>.github.io/<repo>/commands.html`
-   - `https://<org>.github.io/<repo>/assets/icon-16.png`
-   - `https://<org>.github.io/<repo>/assets/icon-32.png`
-   - `https://<org>.github.io/<repo>/assets/icon-80.png`
-
-### Sideload avec manifest production
-
-Pour une verification avant deploiement centralise :
-
-1. Verifier que GitHub Pages sert bien `taskpane.html` et les icones en HTTPS.
-2. Ouvrir `manifest.office.production.xml` et confirmer que les URL pointent vers GitHub Pages.
-3. Sideload `manifest.office.production.xml` pour verifier Word, Excel et PowerPoint.
-4. Ouvrir `manifest.outlook.production.xml` et confirmer que les URL pointent vers GitHub Pages.
-5. Sideload `manifest.outlook.production.xml` pour verifier Outlook en mode composition.
-
-### Deploiement Microsoft 365 Admin Center
-
-1. Ouvrir Microsoft 365 Admin Center.
-2. Aller dans Settings > Integrated apps.
-3. Choisir Upload custom apps.
-4. Charger `manifest.office.production.xml`.
-5. Limiter le deploiement au groupe pilote.
-6. Repeter l'operation avec `manifest.outlook.production.xml`.
-7. Verifier l'apparition de ClassifyMe dans Word, Excel, PowerPoint et Outlook pour un utilisateur pilote.
-8. Elargir le deploiement uniquement apres validation metier et support.
-
-### Limites connues de la publication statique
-
-- GitHub Pages sert uniquement des fichiers statiques : aucune logique serveur n'est disponible.
-- Les manifestes doivent etre reconstruits ou modifies si l'URL GitHub Pages change.
-- Le cache navigateur ou Office peut conserver une ancienne version du task pane pendant quelques minutes.
-- Le MVP reste sans chiffrement, DLP, Graph, authentification ou reporting centralise.
-- Le deploiement Microsoft 365 doit d'abord rester limite a un groupe pilote.
-
-### Checklist avant publication
-
-```text
-- [ ] aucune URL localhost dans les manifests production
-- [ ] taskpane accessible en HTTPS
-- [ ] icônes accessibles en HTTPS
-- [ ] Word testé
-- [ ] Excel testé
-- [ ] PowerPoint testé
-- [ ] Outlook testé
-- [ ] pilote M365 créé
-- [ ] add-in déployé uniquement au groupe pilote
-```
-
-## Verification manuelle dans Word
-
-```text
-1. Lancer npm run start:word.
-2. Ouvrir Word si le script ne l'ouvre pas automatiquement.
-3. Ouvrir le panneau ClassifyMe depuis le ruban.
-4. Cliquer sur Confidentiel.
-5. Verifier que le panneau affiche Confidentiel (CONFIDENTIEL).
-6. Verifier que l'encart du niveau selectionne reprend les couleurs de la classification.
-7. Verifier qu'un bandeau de classification apparait dans l'en-tete Word du document.
-8. Cliquer sur Secret.
-9. Verifier que le bandeau existant est mis a jour sans creer de doublon visible.
-10. Cliquer sur Public.
-11. Verifier que le bandeau ClassifyMe est mis a jour avec le niveau Public.
-```
-
-## Verification manuelle dans PowerPoint
-
-```text
-1. Lancer npm run start:powerpoint.
-2. Ouvrir PowerPoint si le script ne l'ouvre pas automatiquement.
-3. Ouvrir le panneau ClassifyMe depuis le ruban.
-4. Creer ou ouvrir une presentation avec plusieurs slides.
-5. Cliquer sur Confidentiel.
-6. Verifier qu'un footer ClassifyMe apparait en bas de chaque slide existante.
-7. Cliquer sur Secret.
-8. Verifier que le footer est remplace sur chaque slide sans creer de doublon.
-9. Ajouter une nouvelle slide.
-10. Verifier que la nouvelle slide n'est pas marquee automatiquement.
-```
-
-## Verification manuelle dans Excel
-
-```text
-1. Lancer npm run start:excel.
-2. Ouvrir Excel si le script ne l'ouvre pas automatiquement.
-3. Ouvrir le panneau ClassifyMe depuis le ruban.
-4. Creer ou ouvrir un classeur avec plusieurs feuilles.
-5. Cliquer sur Confidentiel.
-6. Verifier qu'une shape ClassifyMeBanner apparait en haut de chaque feuille existante.
-7. Ouvrir l'aperçu avant impression ou exporter en PDF.
-8. Verifier que le footer contient le texte de classification.
-9. Cliquer sur Secret.
-10. Verifier que le bandeau est remplace sur chaque feuille sans creer de doublon.
-11. Ajouter une nouvelle feuille.
-12. Verifier que la nouvelle feuille n'est pas marquee automatiquement.
-```
-
-## Verification manuelle dans Outlook
-
-```text
-1. Lancer npm run start:outlook.
-2. Ouvrir Outlook si le script ne l'ouvre pas automatiquement.
-3. Creer un nouvel email ou une nouvelle réunion dont vous êtes l'organisateur.
-4. Ouvrir le panneau ClassifyMe depuis le ruban de l'élément en composition.
-5. Verifier que l'option Ajouter un prefixe a l'objet est decochee.
-6. Cliquer successivement sur Public, Restreint, Confidentiel puis Secret.
-7. Apres chaque clic, verifier qu'il reste exactement un bandeau ClassifyMe, avec le dernier niveau choisi.
-8. Verifier que le contenu, la signature, les citations eventuelles ou le contenu existant de la réunion restent en place.
-9. Verifier que l'objet n'a pas ete modifie.
-10. Cocher Ajouter un prefixe a l'objet puis cliquer sur Confidentiel.
-11. Verifier que l'objet contient [CONFIDENTIEL] sans doublon.
-12. Cliquer sur Secret et verifier que le prefixe devient [SECRET] sans doublon.
-13. Decocher Ajouter un prefixe a l'objet puis cliquer sur Secret.
-14. Verifier que le prefixe [SECRET] est retire de l'objet.
-```
-
-## Spike — Ouverture automatique Outlook
-
-Le débrief détaillé est disponible dans
-[`RAPPORT-SPIKE-AUTOOPEN-OUTLOOK.md`](RAPPORT-SPIKE-AUTOOPEN-OUTLOOK.md).
-
-### Conclusion de faisabilite documentaire
-
-Le manifeste DEV `manifest.outlook.xml` declare maintenant `OnNewMessageCompose` et
-`OnNewAppointmentOrganizer` dans un `VersionOverridesV1_1` avec le requirement set
-`Mailbox 1.10`. Ces evenements sont pris en charge dans Outlook Classic Windows, le
-nouvel Outlook Windows et Outlook sur le web. `OnNewMessageCompose` couvre aussi les
-reponses, reponses a tous et transferts, mais pas la reouverture d'un brouillon.
-
-L'ouverture entierement automatique demandee n'est toutefois pas une combinaison
-officiellement supportee : `Office.addin.showAsTaskpane()` exige `SharedRuntime 1.1`,
-et Microsoft indique que les runtimes partages ne sont pas pris en charge dans Outlook.
-Le handler du spike n'appelle donc pas cette API. Il utilise le repli montre par
-l'echantillon officiel Microsoft : une notification non bloquante propose l'action
-**Ouvrir ClassifyMe**, qui ouvre le task pane existant apres un clic. Le bouton historique
-du ruban reste disponible.
-
-Cette conclusion signifie que le critere « aucune interaction utilisateur prealable »
-est attendu en echec sur les trois clients. Les tests restent utiles pour confirmer le
-declenchement des evenements et la fiabilite du repli supporte.
-
-Documentation Microsoft consultee :
-
-- [Activation basee sur les evenements](https://learn.microsoft.com/office/dev/add-ins/develop/event-based-activation)
-- [Evenements de nouvelle composition Outlook](https://learn.microsoft.com/office/dev/add-ins/outlook/on-new-compose-events-walkthrough)
-- [Afficher ou masquer un task pane](https://learn.microsoft.com/office/dev/add-ins/develop/show-hide-add-in)
-- [Runtimes Office Add-ins](https://learn.microsoft.com/office/dev/add-ins/testing/runtimes)
-- [Exemple officiel de signature Outlook](https://learn.microsoft.com/samples/officedev/office-add-in-samples/outlook-add-in-set-signature/)
-- [Deboguer l'activation evenementielle](https://learn.microsoft.com/office/dev/add-ins/testing/debug-autolaunch)
-
-### Lancer le spike
-
-```text
-1. Installer les dependances avec npm install si necessaire.
-2. Executer npm run build:dev.
-3. Executer npm run validate:outlook.
-4. Executer npm run start:outlook pour demarrer le serveur HTTPS et sideloader manifest.outlook.xml.
-5. Si Outlook etait deja ouvert ou si une ancienne version du manifeste est en cache,
-   supprimer l'add-in, redemarrer Outlook puis le sideloader de nouveau.
-6. Pour Outlook sur le web ou le nouvel Outlook, ouvrir les outils de developpement du
-   navigateur ; pour le nouvel Outlook Windows, utiliser olk.exe --devtools.
-7. Pour Outlook Classic Windows, suivre la procedure Microsoft de debogage direct du
-   runtime evenementiel et inspecter bundle.js sur le port 9223.
-8. Executer chaque scenario de la matrice ci-dessous dans les trois clients.
-9. Rechercher dans la console le prefixe [ClassifyMe][Spike AutoOpen].
-10. Arreter le spike avec npm run stop:outlook.
-```
-
-Le sideload est adapte aux essais de developpement. Pour une validation pilote proche
-du deploiement reel, publier les ressources sur une URL HTTPS accessible puis deployer
-le manifeste DEV a un groupe pilote depuis Microsoft 365 Admin Center. Ne pas utiliser
-`manifest.outlook.production.xml` pour ce spike. Les mises a jour d'un manifeste
-event-based deja deploye par un administrateur demandent un nouveau consentement admin.
-
-### Resultats a consigner
-
-| Scénario                                  | Classic  | New Outlook | Web      |
-| ----------------------------------------- | -------- | ----------- | -------- |
-| Nouveau mail                              | Repli fonctionnel | À tester    | Repli fonctionnel |
-| Réponse à un mail                         | À confirmer | À tester    | À tester |
-| Transfert d'un mail                       | À confirmer | À tester    | À tester |
-| Nouvelle réunion                          | À confirmer | À tester    | À tester |
-| Ouverture manuelle toujours fonctionnelle | Fonctionnelle | À tester    | À confirmer |
-
-Premier passage Outlook Classic du 22 septembre 2026 : aucune notification,
-aucune ouverture de panneau et aucun log observé. Ce résultat ne prouve pas encore
-que le handler ne s'est pas exécuté, car le runtime événementiel Classic est distinct
-du task pane et ses `console.log` ne sont pas affichés dans la console du task pane.
-L'inspection locale confirme que le manifeste contenant les deux `LaunchEvent` et le
-bundle JavaScript contenant les deux appels `Office.actions.associate` ont bien été
-mis en cache par Outlook.
-
-### Second passage de diagnostic — Outlook Classic
-
-Avant de rejouer la matrice Classic :
-
-```text
-1. La boîte testée a été confirmée sur Exchange Online. Exchange on-premises est donc
-   écarté comme cause de l'échec observé.
-2. Fermer complètement Outlook, y compris tous les processus OUTLOOK.EXE.
-3. Dans un terminal du projet, activer le journal de chargement Office :
-   npx office-addin-dev-settings runtime-log --enable .\outlook-runtime.log
-4. Relancer npm run start:outlook et laisser le serveur HTTPS actif pendant tout le test.
-5. Vérifier que https://localhost:3000/autoopen.js répond avant de créer un message.
-6. Suivre la procédure Microsoft « Debug event-based add-ins » : attacher le debugger
-   direct au port 9223, puis placer un breakpoint dans le bundle.js mis en cache.
-7. Créer un nouveau message depuis le bouton Nouveau courrier, sans ouvrir un brouillon.
-8. Vérifier successivement : breakpoint du handler, notification de diagnostic/action,
-   puis appel à event.completed().
-9. Refaire le test avec une nouvelle réunion créée par l'organisateur.
-10. Après le diagnostic, désactiver le journal :
-    npx office-addin-dev-settings runtime-log --disable
-```
-
-Le journal `outlook-runtime.log` fournit les erreurs de chargement du manifeste et du
-runtime, mais pas les sorties JavaScript `console.log`. Celles-ci nécessitent le debugger
-direct. Le poste inspecté utilise Outlook Classic x64 `16.0.17932.20910`, supérieur au
-minimum Mailbox 1.10 (`16.0.13929.20296`). Le client est donc assez récent ; le type de
-serveur Exchange est compatible. L'exécution effective du runtime reste à confirmer.
-
-Le second build du spike utilisait la version DEV `1.0.0.1` pour forcer le rafraichissement
-du manifeste. Si l'`InsightMessage` avec l'action **Ouvrir ClassifyMe** échoue après le
-déclenchement du handler, le code tente désormais une notification informative minimale :
-« Le handler ClassifyMe s'est déclenché, mais l'action d'ouverture a échoué. » L'absence
-des deux notifications indique que l'événement ou le runtime n'a pas été exécuté.
-
-Le contrôle du bundle réellement mis en cache après ce second passage a identifié une
-cause technique : `webpack-dev-server` injectait son client WebSocket et le hot module
-replacement dans `autoopen.js`. Outlook Classic exécutait ces modules navigateur avant
-le module du spike dans son runtime JavaScript-only. L'enregistrement des handlers pouvait
-donc être interrompu avant les appels `Office.actions.associate()`.
-
-Le troisième build utilise la version DEV `1.0.0.2` et désactive `client`, `hot` et
-`liveReload` dans `webpack-dev-server`. Le bundle événementiel servi doit désormais être
-autonome, sans référence à `webpack-dev-server`, `WebSocketClient` ou `hot/dev-server`.
-Cette désactivation s'applique uniquement au confort de rechargement du serveur DEV : elle
-ne change ni le task pane, ni la classification, ni les builds de production.
-
-Le passage suivant confirme que le repli fonctionne dans Outlook Classic. Dans Outlook
-sur le web, aucune notification n'a en revanche été observée. Classic charge directement
-`autoopen.js`, tandis que Web charge `autoopen.html`. Le HTML généré chargeait le bundle
-avec `defer`, ce qui pouvait retarder `Office.actions.associate()` dans le runtime court.
-La version DEV `1.0.0.3` impose maintenant un chargement bloquant du bundle `autoopen.js`.
-
-Pour retester Web, supprimer d'abord ClassifyMe DEV de **Mes compléments**, puis ajouter
-de nouveau `manifest.outlook.xml` afin d'éviter le cache du manifeste `1.0.0.2`. Garder
-`npm run start:outlook` actif, ouvrir directement `https://localhost:3000/autoopen.html`
-dans le même navigateur pour confirmer le certificat, puis créer un message neuf depuis
-la surface de composition standard d'Outlook sur le web.
-
-Lors du passage suivant, `autoopen.html` et `autoopen.js` apparaissent bien dans les
-échanges réseau Web, mais aucune notification n'est affichée. La version DEV `1.0.0.4`
-ajoute donc un paramètre de cache explicite aux deux ressources et les traces suivantes
-dès le chargement, avant tout déclenchement d'événement :
-
-Webpack ajoute également un hash de compilation à l'URL de `autoopen.js` générée dans
-`autoopen.html`, afin qu'Outlook Web ne réutilise pas un ancien bundle JavaScript.
-
-```text
-[ClassifyMe][Spike AutoOpen] runtime chargé
-[ClassifyMe][Spike AutoOpen] handlers associés
-```
-
-Si ces deux lignes apparaissent sans la ligne `OnNewMessageCompose déclenché`, Outlook Web
-charge correctement le runtime mais ne distribue pas l'événement. Si la ligne de
-déclenchement apparaît, les logs suivants permettent d'identifier l'échec de
-`notificationMessages.addAsync`.
-
-Le test Web suivant a confirmé le chargement du runtime et l'association des handlers,
-mais Office.js signalait ensuite que l'add-in n'avait appelé ni `Office.onReady()` ni
-`Office.initialize`. La version DEV `1.0.0.5` définit donc `Office.initialize` dans
-`autoopen.html`, avant le chargement du bundle. Cette initialisation est propre au runtime
-Web ; les appels `Office.actions.associate` restent exécutés immédiatement dans
-`autoopen.js`, comme l'exige l'activation événementielle. La console doit maintenant aussi
-afficher :
-
-```text
-[ClassifyMe][Spike AutoOpen] Office.initialize exécuté (Web)
-```
-
-Le test final de la version DEV `1.0.0.5` confirme que cette initialisation corrige le
-problème : la notification avec l'action **Ouvrir ClassifyMe** est désormais fonctionnelle
-dans Outlook Web lors de la création d'un nouveau message.
-
-Pour chaque test, verifier et consigner :
-
-1. si le panneau ClassifyMe s'ouvre automatiquement — attendu : non, API non supportee dans Outlook ;
-2. s'il ne s'ouvre qu'une fois ;
-3. si une interaction utilisateur prealable est necessaire — attendu : oui, clic sur la notification ;
-4. si les logs montrent le declenchement de l'evenement, le demarrage du handler, l'absence motivee d'appel a `showAsTaskpane()`, le resultat de la notification et l'execution de `event.completed()` ;
-5. si l'action **Ouvrir ClassifyMe** et le bouton manuel ouvrent toujours le task pane existant.
-
-Sur Outlook Web et le nouvel Outlook, tester uniquement les surfaces standard de
-composition. Microsoft signale que certaines surfaces non standard, notamment une
-reponse a une invitation avec note ou le transfert d'une reunion depuis le calendrier,
-peuvent ne pas declencher l'activation evenementielle.
-
-### Elements temporaires du spike
-
-Si le spike est abandonne, supprimer `src/hosts/outlook/outlookLaunchEvents.ts` et
-`src/hosts/outlook/outlookLaunchEvents.html`, retirer l'entree et le plugin Webpack
-`autoopen`, puis retirer le `VersionOverridesV1_1` imbrique de `manifest.outlook.xml`.
-Le manifeste de production et la logique de classification ne contiennent aucun
-changement lie au spike.
-
-### Matrice de validation Outlook
-
-Executer cette matrice dans Outlook Classic Windows, le nouvel Outlook pour Windows et Outlook sur le web. Le resultat attendu de chaque changement est : **exactement un bandeau ClassifyMe**.
-
-| Cas                         | Outlook Classic | Nouvel Outlook | Outlook sur le web |
-| --------------------------- | --------------- | -------------- | ------------------ |
-| Nouvelle classification     | a verifier      | a verifier     | a verifier         |
-| PUBLIC vers RESTREINT       | a verifier      | a verifier     | a verifier         |
-| RESTREINT vers CONFIDENTIEL | a verifier      | a verifier     | a verifier         |
-| CONFIDENTIEL vers SECRET    | a verifier      | a verifier     | a verifier         |
-| Changement repete 4 fois    | a verifier      | a verifier     | a verifier         |
-| Message avec signature      | a verifier      | a verifier     | a verifier         |
-| Reponse a un email existant | a verifier      | a verifier     | a verifier         |
-
-### Matrice de validation des réunions Outlook
-
-Exécuter cette matrice dans Outlook Classic Windows, le nouvel Outlook pour Windows et Outlook sur le web, sur une réunion créée ou modifiée par son organisateur. Le résultat attendu après chaque action est : **exactement un bandeau ClassifyMe**, le contenu existant de la réunion conservé et, si l'option est active, un seul préfixe d'objet.
-
-| Cas                            | Outlook Classic | Nouvel Outlook | Outlook sur le web |
-| ------------------------------ | --------------- | -------------- | ------------------ |
-| Nouvelle réunion               | a vérifier      | a vérifier     | a vérifier         |
-| PUBLIC                         | a vérifier      | a vérifier     | a vérifier         |
-| PUBLIC → CONFIDENTIEL          | a vérifier      | a vérifier     | a vérifier         |
-| CONFIDENTIEL → SECRET          | a vérifier      | a vérifier     | a vérifier         |
-| Préfixe objet activé           | a vérifier      | a vérifier     | a vérifier         |
-| Préfixe objet désactivé        | a vérifier      | a vérifier     | a vérifier         |
-| Modification répétée du niveau | a vérifier      | a vérifier     | a vérifier         |
-| Réunion avec contenu existant  | a vérifier      | a vérifier     | a vérifier         |
-
-### Idempotence du bandeau Outlook
-
-Le premier pilote identifiait le bandeau uniquement avec les commentaires HTML `ClassifyMe:BannerStart` et `ClassifyMe:BannerEnd`. Outlook sur le web et le nouvel Outlook pour Windows peuvent reecrire le HTML du corps et ne conservent pas necessairement ces commentaires. Le code ne retrouvait alors plus le bandeau et en ajoutait un autre.
-
-Le bandeau courant porte desormais l'identifiant HTML `classifyme-classification-banner`. Outlook sur le web peut le reecrire en `x_classifyme-classification-banner` (et ajouter plusieurs prefixes `x_` dans du HTML cite) afin d'isoler le DOM du message ou de la réunion. A chaque application, l'add-in normalise ces prefixes, supprime tous les bandeaux ClassifyMe trouves, nettoie les anciens bandeaux pilote encore reconnaissables, ajoute le nouveau bandeau une seule fois en tete puis remplace le corps HTML. Cette methode n'utilise pas `prependAsync()`.
-
-L'option Outlook de prefixe d'objet est volontairement desactivee par defaut. Quand elle est cochee, ClassifyMe ajoute ou remplace uniquement les prefixes connus `[PUBLIC]`, `[RESTREINT]`, `[RESTRAINT]`, `[CONFIDENTIEL]` et `[SECRET]` pour l'email ou la réunion. Pour une réunion, une option décochée ne modifie jamais l'objet. Pour préserver le comportement email existant, une option décochée y retire un préfixe ClassifyMe connu sans modifier le reste de l'objet.
+Avant un déploiement Microsoft 365 :
+
+1. vérifier que toutes les ressources sont accessibles en HTTPS ;
+2. vérifier qu'aucun manifeste de production ne contient `localhost` ;
+3. valider les deux manifestes de production ;
+4. sideloader les manifestes et rejouer les validations manuelles ;
+5. déployer d'abord les compléments à un groupe pilote depuis Microsoft 365 Admin Center.
+
+GitHub Pages ne fournit que des ressources statiques. Un changement d'URL impose une
+reconstruction des manifestes publiés. Le cache Office peut conserver une ancienne
+version pendant quelques minutes.
 
 ## Ce qui fonctionne
 
-- Le panneau lateral `ClassifyMe` est disponible dans Word, PowerPoint et Excel via `manifest.xml`.
-- Le panneau lateral `ClassifyMe` est disponible dans Outlook compose mode via `manifest.outlook.xml`, pour les emails et les réunions dont l'utilisateur est l'organisateur.
-- Le code commun est isole dans `src/core`.
-- Les implementations Word, PowerPoint et Excel sont isolees dans `src/hosts/office`.
-- L'implementation Outlook est isolee dans `src/hosts/outlook`.
-- Les quatre niveaux de classification sont affiches avec un libelle, un code et une courte description.
-- Le niveau choisi est memorise dans l'etat local du panneau.
-- L'encart du niveau selectionne reprend le fond et la couleur de texte du niveau choisi.
-- Un clic sur une carte applique directement le niveau selectionne.
-- Dans Word, un bandeau est insere ou mis a jour dans l'en-tete du document pour les quatre niveaux.
-- Dans Word, les proprietes personnalisees `ClassificationLevel`, `ClassificationLabel`, `ClassificationUpdatedAt` et `ClassificationTool` sont mises a jour si l'API Word les accepte dans l'environnement Office utilise.
-- Dans PowerPoint, un footer nomme `ClassifyMeFooter` est ajoute en bas de chaque slide existante.
-- Dans PowerPoint, les anciens footers `ClassifyMeFooter` sont supprimes avant reapplication pour eviter les doublons.
-- Dans Excel, une shape texte nommee `ClassifyMeBanner` est ajoutee en haut de chaque feuille existante.
-- Dans Excel, les anciens bandeaux `ClassifyMeBanner` sont supprimes avant reapplication pour eviter les doublons.
-- Dans Excel, un footer de classification est applique a chaque feuille existante pour les impressions et exports PDF.
-- Dans Excel, les proprietes personnalisees `ClassificationLevel`, `ClassificationLabel`, `ClassificationUpdatedAt` et `ClassificationTool` sont mises a jour si l'API Excel les accepte dans l'environnement Office utilise.
-- Dans Outlook compose mode, un bandeau HTML identifie par l'element `div#classifyme-classification-banner` est insere en haut du corps de l'email ou de la réunion ; les variantes d'identifiant prefixees par `x_` d'Outlook Web sont aussi reconnues.
-- Dans Outlook compose mode, tous les bandeaux ClassifyMe identifies sont supprimes avant l'insertion d'un seul nouveau bandeau ; les marqueurs du premier pilote sont nettoyes lorsqu'ils sont encore presents.
-- Dans Outlook compose mode, l'option de prefixe objet ajoute ou remplace le prefixe de classification si elle est cochee. Si elle est décochée, elle ne modifie pas l'objet de la réunion ; le retrait d'un préfixe connu reste conservé pour les emails afin de ne pas changer leur comportement existant.
-- Dans Outlook compose mode, les proprietes personnalisees `ClassificationLevel`, `ClassificationLabel`, `ClassificationUpdatedAt` et `ClassificationTool` sont tentées pour les emails et les réunions organisées. Le bandeau visible reste appliqué si leur enregistrement échoue.
-- Les manifestes Outlook de développement et de production déclarent une surface de commande `AppointmentOrganizerCommandSurface`, en plus de la surface email existante. La version du manifeste de production est `1.0.0.2`.
-- Le manifeste Outlook DEV active le spike temporaire `spike-autoopen` sur les nouvelles compositions Mailbox 1.10 et affiche une notification permettant d'ouvrir ClassifyMe.
+- Les quatre niveaux sont disponibles dans un panneau commun et s'appliquent au clic.
+- Word met à jour un bandeau et tente de stocker les propriétés personnalisées prévues.
+- PowerPoint remplace les pieds de page ClassifyMe sur les diapositives existantes.
+- Excel remplace le bandeau et le pied de page sur les feuilles existantes et tente de
+  stocker les propriétés personnalisées prévues.
+- Outlook remplace les bandeaux identifiés, y compris les identifiants préfixés par `x_`
+  dans Outlook Web, et conserve le reste du corps HTML.
+- Outlook tente de stocker les propriétés personnalisées ; l'échec de cette opération ne
+  retire pas le bandeau visible.
+- Les manifestes Outlook DEV et PROD proposent les commandes manuelles pour les messages
+  et réunions ainsi que les deux événements de rappel.
+- Les builds DEV et PROD incluent le runtime événementiel autonome.
 
 ## Limites connues du MVP
 
-- Le footer PowerPoint est applique uniquement aux slides existantes au moment du clic.
-- Le footer PowerPoint utilise un positionnement fixe optimise pour les slides widescreen par defaut du MVP.
-- Les nouvelles slides creees ensuite ne sont pas automatiquement marquees.
-- Le MVP ne modifie pas encore les masques PowerPoint.
-- Le MVP ne stocke pas encore de metadonnees personnalisees dans PowerPoint.
-- Le bandeau Excel est une shape visible en vue normale, pas une ligne de cellules.
-- Le bandeau Excel utilise une largeur fixe prevue pour tenir sur une page portrait standard.
-- Le footer Excel est destine aux impressions et exports PDF.
-- La classification Excel est appliquee uniquement aux feuilles existantes au moment du clic.
-- Les nouvelles feuilles creees ensuite ne sont pas automatiquement marquees.
-- L'utilisateur doit recliquer sur un niveau de classification pour mettre a jour le classeur apres creation de nouvelles feuilles.
-- Les metadonnees Excel peuvent ne pas etre enregistrees si l'environnement Office ne supporte pas les proprietes personnalisees du classeur.
-- Le panneau ne relit pas encore automatiquement une classification deja presente lors de l'ouverture d'un fichier.
-- Outlook est limité au mode composition des emails et des réunions dont l'utilisateur est l'organisateur. Le mode lecture, les invitations reçues et les réponses à des invitations ne sont pas implémentés.
-- Outlook utilise un manifeste separe, `manifest.outlook.xml`.
-- Les proprietes personnalisees Outlook peuvent ne pas etre enregistrees de manière homogène selon le client, l'état réseau ou le type de compte, y compris sur une réunion organisée. Dans ce cas, le bandeau reste appliqué.
-- Les proprietes personnalisees Outlook enregistrees en mode composition ne sont pas transmises aux destinataires.
-- Le bandeau Outlook est appliqué au corps HTML courant du brouillon ou de la réunion. Les emails ou réunions au format texte brut peuvent refuser l'insertion HTML selon le client Outlook.
-- Outlook peut reecrire le HTML d'un brouillon entre la lecture et l'ecriture. Le bandeau ne depend donc pas de commentaires HTML ; la compatibilite pilote ne peut nettoyer un ancien bandeau que si ses commentaires ou sa structure complete restent reconnaissables.
-- Le prefixe d'objet Outlook n'est jamais conserve par ClassifyMe si l'option est decochee et si le prefixe existant fait partie des prefixes connus.
-- Le MVP ne classifie pas automatiquement les reponses, les fils de conversation Outlook ou les réponses à des invitations.
-- Le spike Outlook ne peut pas ouvrir automatiquement le task pane sans interaction : `Office.addin.showAsTaskpane()` requiert un runtime partage, non pris en charge dans Outlook. Le repli par notification exige un clic utilisateur.
-- L'activation evenementielle necessite une connexion et s'arrete lorsque l'utilisateur quitte l'element ; un handler Outlook expire aussi apres environ cinq minutes s'il n'appelle pas `event.completed()`.
-- Outlook Web et le nouvel Outlook ne garantissent pas l'activation evenementielle sur les surfaces de composition non standard.
-- Le MVP ne lit pas et ne classe pas les emails reçus ou les invitations reçues.
-- Le fichier n'est pas chiffre.
-- L'add-in ne bloque pas l'enregistrement, l'envoi, le partage, la copie, l'impression ou le transfert.
-- Aucun controle DLP n'est applique.
-- Le contenu du fichier n'est pas analyse.
-- Aucune IA n'est utilisee.
-- Aucun reporting centralise n'est disponible.
-- Aucune synchronisation avec Microsoft Purview n'est implementee.
+- Les nouvelles diapositives et feuilles ajoutées après classification ne sont pas
+  marquées automatiquement.
+- PowerPoint ne modifie pas les masques et ne stocke pas encore de métadonnées
+  personnalisées.
+- Le panneau ne relit pas automatiquement une classification existante à son ouverture.
+- Outlook prend en charge uniquement la composition d'e-mails et de réunions organisées ;
+  le mode lecture et les invitations reçues ne sont pas implémentés.
+- Les propriétés personnalisées Outlook dépendent du client, du réseau et du type de
+  compte, et ne sont pas transmises aux destinataires.
+- Un élément Outlook en texte brut peut refuser l'insertion du bandeau HTML.
+- Certaines surfaces Outlook non standard peuvent ne pas déclencher l'activation
+  événementielle.
+- Le rappel Outlook nécessite un clic pour ouvrir le panneau et dépend d'une connexion.
+- Le MVP ne chiffre pas, ne bloque pas, n'analyse pas et ne produit aucun reporting.
 
-## Prochaines etapes recommandees
+## Prochaines étapes recommandées
 
-1. Verifier manuellement le comportement dans Word pour les quatre niveaux.
-2. Verifier manuellement le comportement dans PowerPoint sur une presentation de plusieurs slides.
-3. Verifier manuellement le comportement dans Excel sur un classeur de plusieurs feuilles.
-4. Verifier manuellement l'idempotence Outlook sur les trois clients cibles, pour les emails (y compris une signature et une réponse existante) et les réunions organisées.
-5. Terminer la matrice du spike sur New Outlook, les reponses, les transferts et les reunions, puis confirmer que le repli par notification est acceptable malgre l'absence d'ouverture entierement automatique.
-6. Confirmer si PowerPoint doit utiliser les masques de slides dans une prochaine version.
-7. Confirmer si Excel doit utiliser une zone reservee ou une position adaptee aux modeles internes.
-8. Ajouter la lecture des proprietes ou marquages existants a l'ouverture du panneau.
+1. Rejouer le protocole Outlook complet après sideload des manifestes industrialisés.
+2. Valider les ressources de production sur l'URL HTTPS réelle avec un groupe pilote.
+3. Vérifier manuellement les quatre niveaux dans Word, PowerPoint et Excel.
+4. Décider ultérieurement si PowerPoint doit utiliser les masques de diapositives.
+5. Décider si la lecture d'une classification existante doit être ajoutée au panneau.
 
-## Hors perimetre
+## Hors périmètre
 
-Les fonctionnalites suivantes restent explicitement exclues du MVP :
-
-- chiffrement ;
-- DLP ;
-- restriction d'impression ;
-- restriction de transfert ;
-- analyse automatique du contenu ;
-- suggestion par IA ;
-- reporting centralise ;
-- workflow de validation ;
-- base de donnees ;
-- API Graph ;
-- authentification Entra ID ;
-- integration Microsoft Purview.
+- ouverture automatique du task pane sans clic ;
+- blocage avant envoi ou contrôle DLP ;
+- classification automatique ou suggestion par IA ;
+- chiffrement ou restriction d'impression/transfert ;
+- Microsoft Graph, backend, base de données ou reporting ;
+- authentification Entra ID ou intégration Microsoft Purview.

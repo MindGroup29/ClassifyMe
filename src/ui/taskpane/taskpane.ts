@@ -64,7 +64,7 @@ function updateSelectedLevel(level: ClassificationLevel | undefined): void {
 
   selectedLabel.textContent = level
     ? `${level.label} (${level.code})`
-    : "No classification selected";
+    : "Aucune classification sélectionnée";
 
   if (level) {
     selectedSummary.style.backgroundColor = level.bannerBackground;

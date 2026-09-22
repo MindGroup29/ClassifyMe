@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 
 <head>
     <meta charset="UTF-8" />
@@ -14,22 +14,22 @@
 
 <body class="ms-font-m ms-Fabric">
     <section id="sideload-msg" class="sideload-message">
-        <h2 class="ms-font-xl">Please sideload the add-in in Word, PowerPoint or Excel to use ClassifyMe.</h2>
+        <h2 class="ms-font-xl">Chargez le complément dans Word, PowerPoint, Excel ou Outlook pour utiliser ClassifyMe.</h2>
     </section>
 
     <main id="app-body" class="app-shell" style="display: none;">
         <header class="app-header">
-            <p class="app-kicker">Office classification MVP</p>
+            <p class="app-kicker">MVP de classification Office</p>
             <h1>ClassifyMe</h1>
-            <p class="app-subtitle" id="host-subtitle">Classify this document before sharing.</p>
+            <p class="app-subtitle" id="host-subtitle">Classifiez ce document avant son partage.</p>
         </header>
 
         <section class="selection-summary" aria-live="polite">
-            <span class="selection-summary__label">Selected level</span>
-            <strong id="selected-level">No classification selected</strong>
+            <span class="selection-summary__label">Niveau sélectionné</span>
+            <strong id="selected-level">Aucune classification sélectionnée</strong>
         </section>
 
-        <section class="classification-levels" id="classification-levels" aria-label="Classification levels"></section>
+        <section class="classification-levels" id="classification-levels" aria-label="Niveaux de classification"></section>
 
         <label id="outlook-subject-prefix-option" class="outlook-option" style="display: none;">
             <input id="add-subject-prefix" type="checkbox" />
@@ -37,11 +37,11 @@
         </label>
 
         <p id="status-message" class="status-message status-message--info" role="status">
-            Choose a level to apply it.
+            Choisissez un niveau pour l'appliquer.
         </p>
 
         <p class="mvp-note">
-            This MVP adds a visible marker and limited metadata only. It does not encrypt or restrict the file or email.
+            Ce MVP ajoute uniquement un marquage visible et des métadonnées limitées. Il ne chiffre ni ne restreint le fichier ou l'e-mail.
         </p>
     </main>
 </body>

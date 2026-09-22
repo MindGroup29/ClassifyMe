@@ -1,7 +1,7 @@
 # Rapport de développement — Spike d’ouverture de ClassifyMe dans Outlook
 
 **Date du débrief :** 22 septembre 2026  
-**Statut :** spike techniquement concluant pour le repli par notification  
+**Statut :** spike terminé et industrialisé. Ce document est conservé comme historique technique.  
 **Périmètre testé :** Outlook Classic Windows et Outlook sur le web avec Exchange Online
 
 ## 1. Résumé exécutif
@@ -253,4 +253,3 @@ restauration.
 - [Afficher ou masquer un task pane](https://learn.microsoft.com/office/dev/add-ins/develop/show-hide-add-in)
 - [API NotificationMessages](https://learn.microsoft.com/javascript/api/outlook/office.notificationmessages)
 - [Exemple Outlook Event-Based Activation](https://learn.microsoft.com/samples/officedev/office-add-in-samples/outlook-add-in-set-signature/)
-
