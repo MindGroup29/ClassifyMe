@@ -13,7 +13,8 @@ l'envoi, n'analyse pas le contenu et ne remplace pas Microsoft Purview.
 Le projet couvre actuellement :
 
 - Word : bandeau de classification dans l'en-tête du document ;
-- PowerPoint : pied de page de classification sur les diapositives existantes ;
+- PowerPoint : pied de page de classification sur les diapositives existantes et
+  métadonnées de présentation si `PowerPointApi 1.7` est disponible ;
 - Excel : forme de classification sur les feuilles existantes et pied de page pour
   impression/PDF ;
 - Outlook : bandeau HTML idempotent dans un e-mail ou une réunion organisée, en mode
@@ -91,6 +92,69 @@ npm run stop:outlook
 ```
 
 Le poste peut demander l'approbation du certificat HTTPS de développement local.
+
+### Contrôles techniques du lot PowerPoint
+
+- `npm run build:dev` : réussi, sans avertissement de compilation.
+- `npm run build` : réussi ; deux avertissements de performance liés au fichier
+  `assets/logo.png` existant (1,43 Mio, inchangé dans ce lot).
+- `npm run validate` : manifeste Office DEV valide, inchangé.
+- `npm run lint` : aucune erreur ni nouvel avertissement ; les deux avertissements
+  `office-addins/no-navigational-load` dans Word étaient présents avant modification.
+- Contrôle supplémentaire `npx tsc --noEmit` : échoue sur l'erreur préexistante
+  `TS2345` dans `src/hosts/outlook/outlookClassification.ts:370` (`string | number`
+  transmis à `new Error`). Ce fichier n'est pas modifié dans ce lot. Webpack utilise
+  Babel et ne remplace pas cette vérification des types.
+
+Aucun test automatisé ni dépendance n'a été ajouté. Les vérifications PowerPoint
+Windows/Web ci-dessous restent à effectuer dans Office.
+
+## Métadonnées de classification des documents
+
+Word, Excel et désormais PowerPoint écrivent les mêmes propriétés personnalisées :
+
+| Propriété | Exemple pour `[CONFIDENTIEL]` |
+| --- | --- |
+| `ClassificationLevel` | `CONFIDENTIEL` |
+| `ClassificationLabel` | `Confidentiel` |
+| `ClassificationUpdatedAt` | Date ISO 8601 UTC, générée par `new Date().toISOString()` |
+| `ClassificationTool` | `ClassifyMe` |
+
+PowerPoint utilise `context.presentation.properties.customProperties` et
+`CustomPropertyCollection.add(key, value)`, qui crée ou met à jour une propriété par
+clé insensible à la casse, sans doublon. Les noms et niveaux proviennent des constantes
+communes ; les autres propriétés de la présentation ne sont pas modifiées.
+Voir la [référence Microsoft de CustomPropertyCollection](https://learn.microsoft.com/en-us/javascript/api/powerpoint/powerpoint.custompropertycollection).
+
+Le requirement set **PowerPointApi 1.7** est vérifié à l'exécution avec
+`Office.context.requirements.isSetSupported()`. Selon la
+[matrice Microsoft](https://learn.microsoft.com/en-us/javascript/api/requirement-sets/powerpoint/powerpoint-api-requirement-sets),
+il est disponible dans PowerPoint Web, Windows Microsoft 365 / éditions perpétuelles
+vendues au détail à partir de la version 2412 (build 18324.20030), et Mac à partir de
+16.92 (24120731). Il n'est pas disponible sur iPad ni dans les éditions Windows
+perpétuelles en licence en volume / LTSC. Le contrôle à l'exécution reste déterminant.
+La documentation consultée n'indique pas de différence de comportement de `add()`
+entre Windows et Web ; le protocole manuel doit être joué sur ces deux clients.
+
+Les manifestes restent inchangés : imposer 1.7 dans le manifeste empêcherait les
+anciens clients de bénéficier du marquage visuel existant (PowerPointApi 1.4).
+Les footers sont appliqués et synchronisés avant une écriture séparée des métadonnées.
+Si 1.7 est absent ou si l'écriture échoue, la classification visuelle reste appliquée,
+un avertissement interne est journalisé dans la console et les messages du panneau
+restent inchangés. Office.js ne garantit pas une transaction des quatre écritures :
+en cas d'échec, vérifier les propriétés et réappliquer le niveau pour les normaliser.
+
+La fonction interne exportée `readPowerPointClassification()` lit les propriétés,
+sans analyser les shapes ni modifier le panneau :
+
+- `classified` : outil égal à `ClassifyMe` et code reconnu parmi les quatre niveaux ;
+- `unclassified` : aucune des quatre propriétés de classification n'existe ;
+- `indeterminate` : propriétés partielles ne permettant pas d'identifier outil et niveau,
+  outil différent, niveau inconnu, erreur API ou requirement set absent.
+
+Une ancienne présentation contenant uniquement `ClassifyMeFooter` n'est pas migrée
+automatiquement. Sa prochaine classification crée les métadonnées si l'API est
+disponible, tout en remplaçant les footers comme auparavant.
 
 ## Rappel de classification Outlook
 
@@ -178,10 +242,45 @@ Pour chaque scénario, vérifier :
 
 ### PowerPoint
 
-1. Lancer `npm run start:powerpoint` avec une présentation de plusieurs diapositives.
-2. Appliquer deux niveaux successifs.
-3. Vérifier que chaque diapositive existante contient un seul pied de page à jour.
-4. Ajouter une diapositive et vérifier qu'elle n'est pas marquée automatiquement.
+Le fonctionnement Office reste à valider manuellement ; les builds ne le prouvent pas.
+Sur Windows compatible 1.7, lancer `npm run start:powerpoint`. Rejouer également le
+protocole dans PowerPoint Web après chargement du manifeste DEV et lancement du
+serveur local (`npm run dev-server`).
+
+1. Créer une présentation de plusieurs diapositives et appliquer `[PUBLIC]`.
+2. Vérifier un seul `ClassifyMeFooter` par diapositive existante, avec le marquage attendu.
+3. Dans PowerPoint Windows, ouvrir **Fichier > Informations > Propriétés > Propriétés
+   avancées > Personnalisation** et vérifier les quatre propriétés : niveau `PUBLIC`,
+   libellé `Public`, date UTC ISO et outil `ClassifyMe`, sans nom dupliqué.
+4. Enregistrer en `.pptx`, fermer puis rouvrir et vérifier la persistance des propriétés.
+5. Appliquer `[CONFIDENTIEL]` : vérifier le footer, le niveau `CONFIDENTIEL`, le libellé
+   `Confidentiel`, une date actualisée et l'outil `ClassifyMe`. Chaque propriété doit
+   rester unique ; le contenu utilisateur doit être conservé.
+6. Appliquer successivement `[PUBLIC]`, `[RESTREINT]`, `[CONFIDENTIEL]` et `[SECRET]`.
+   Recontrôler footers, codes, libellés, date et outil après chaque action, y compris
+   en appliquant deux fois le même niveau.
+7. Ouvrir une présentation historique avec footers mais sans propriétés, appliquer
+   une classification et vérifier que les footers restent corrects et que les quatre
+   propriétés sont créées. Aucune migration ne doit se produire à l'ouverture seule.
+8. Ajouter une diapositive et vérifier qu'elle n'est pas marquée automatiquement.
+9. Sur un client supportant le marquage 1.4 mais pas 1.7, vérifier que les footers sont
+   toujours appliqués, que le panneau garde son message habituel et que la console
+   contient l'avertissement de métadonnées indisponibles.
+
+Pour PowerPoint Web, télécharger la présentation enregistrée et inspecter ses
+propriétés dans PowerPoint Windows. Une autre vérification consiste à ouvrir une
+**copie** du `.pptx` comme archive ZIP et à examiner `docProps/custom.xml` : les quatre
+noms doivent apparaître une seule fois avec les valeurs attendues.
+
+Dans un débogueur Office.js (par exemple Script Lab), vérifier également la lecture
+des propriétés sans consulter les shapes : outil `ClassifyMe` et niveau valide,
+absence des quatre propriétés, niveau inconnu, outil seul, niveau seul ou libellé/date
+seuls. La fonction interne retourne respectivement `classified`, `unclassified` ou
+`indeterminate` selon les règles ci-dessus ; elle n'est pas reliée au panneau.
+Pour vérifier son résultat et le chemin d'erreur, utiliser le débogueur du complément
+avec un point d'arrêt dans cette fonction et un appel temporaire de développement
+(à retirer avant livraison). Provoquer une erreur d'écriture dans ce même débogueur
+et vérifier que le marquage déjà appliqué est conservé, avec un avertissement console.
 
 ### Excel
 
@@ -245,7 +344,8 @@ version pendant quelques minutes.
 
 - Les quatre niveaux sont disponibles dans un panneau commun et s'appliquent au clic.
 - Word met à jour un bandeau et tente de stocker les propriétés personnalisées prévues.
-- PowerPoint remplace les pieds de page ClassifyMe sur les diapositives existantes.
+- PowerPoint remplace les pieds de page ClassifyMe sur les diapositives existantes et
+  crée ou met à jour les quatre propriétés personnalisées sur les clients compatibles 1.7.
 - Excel remplace le bandeau et le pied de page sur les feuilles existantes et tente de
   stocker les propriétés personnalisées prévues.
 - Outlook remplace les bandeaux identifiés, y compris les identifiants préfixés par `x_`
@@ -260,8 +360,8 @@ version pendant quelques minutes.
 
 - Les nouvelles diapositives et feuilles ajoutées après classification ne sont pas
   marquées automatiquement.
-- PowerPoint ne modifie pas les masques et ne stocke pas encore de métadonnées
-  personnalisées.
+- PowerPoint ne modifie pas les masques ; ses métadonnées personnalisées nécessitent
+  PowerPointApi 1.7. Leur absence ou une erreur API ne bloque pas le marquage visuel.
 - Le panneau ne relit pas automatiquement une classification existante à son ouverture.
 - Outlook prend en charge uniquement la composition d'e-mails et de réunions organisées ;
   le mode lecture et les invitations reçues ne sont pas implémentés.
@@ -277,7 +377,8 @@ version pendant quelques minutes.
 
 1. Rejouer le protocole Outlook complet après sideload des manifestes industrialisés.
 2. Valider les ressources de production sur l'URL HTTPS réelle avec un groupe pilote.
-3. Vérifier manuellement les quatre niveaux dans Word, PowerPoint et Excel.
+3. Vérifier manuellement les quatre niveaux dans Word, PowerPoint et Excel, ainsi que
+   la persistance et la mise à jour des propriétés PowerPoint sur Windows et Web.
 4. Décider ultérieurement si PowerPoint doit utiliser les masques de diapositives.
 5. Décider si la lecture d'une classification existante doit être ajoutée au panneau.
 
